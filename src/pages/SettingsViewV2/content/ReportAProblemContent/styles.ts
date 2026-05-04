@@ -32,5 +32,13 @@ export const createStyles = () => ({
     flexDirection: 'row' as const,
     justifyContent: 'flex-end' as const,
     flexShrink: 0
+  },
+
+  diagnostics: {
+    display: 'flex' as const,
+    flexDirection: 'column' as const,
+    gap: `${rawTokens.spacing8}px`,
+    paddingTop: `${rawTokens.spacing16}px`,
+    flexShrink: 0
   }
 })

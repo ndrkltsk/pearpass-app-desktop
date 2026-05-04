@@ -18,6 +18,11 @@ declare global {
       vaultInvoke: (method: string, args?: unknown[]) => Promise<{ ok: boolean; data?: unknown; error?: string }>
       vaultOnUpdate: (cb: () => void) => () => void
       openExternal: (url: string) => Promise<void>
+      openLogsFolder: () => Promise<void>
+      isLoggingEnabled: () => Promise<{ enabled: boolean; forced: boolean }>
+      setLogging: (
+        enabled: boolean
+      ) => Promise<{ enabled: boolean; forced: boolean }>
     }
   }
 }

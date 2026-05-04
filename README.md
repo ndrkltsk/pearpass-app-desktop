@@ -14,6 +14,7 @@
 - [Features](#features)
 - [Installation](#installation)
 - [Usage Examples](#usage-examples)
+- [Logging](#logging)
 - [Testing](#testing)
 - [Staging to Dev](#staging-to-dev)
 - [Workspace Dependencies](#workspace-dependencies)
@@ -81,6 +82,20 @@ npm run dev
 Visit the official PearPass documentation for step-by-step guides on setup, vault management, syncing across devices, browser extension usage, and all other PearPass features:
 
 **[docs.pass.pears.com](https://docs.pass.pears.com)**
+
+---
+
+## Logging
+
+Off by default. When enabled, logs are written under `<userData>/logs/` — `main.log` from the host process and `core.log` from the vault worker. Sensitive fields known to the redactor (passwords, keys, tokens, etc.) are scrubbed before any sink.
+
+Three ways to enable:
+
+- **In-app toggle** (Settings → Report a problem → **Enable diagnostic logging**). Persists across launches; toggling on/off resets existing log files for a clean session.
+- **Launch flag:** pass `--enable-logging` at startup. Forces logging on regardless of the toggle.
+- **Nightly builds** (`PearPass-nightly`): logging is on automatically and the in-app toggle is locked.
+
+When logging is on, **Open logs folder** in the same screen reveals the directory.
 
 ---
 

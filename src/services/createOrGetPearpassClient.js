@@ -1,7 +1,4 @@
-import {
-  workletLogger,
-  PearpassVaultClient
-} from '@tetherto/pearpass-lib-vault-core'
+import { PearpassVaultClient } from '@tetherto/pearpass-lib-vault-core'
 
 let pearpassClient = null
 
@@ -26,30 +23,7 @@ export function createOrGetPearpassClient(ipc, storagePath, opts = {}) {
       }
       pearpassClient = new PearpassVaultClient(ipc, storagePath, opts)
     }
-
-    workletLogger.setLogOutput(getLogger('none'))
   }
 
   return pearpassClient
 }
-
-/**
- * Choose what level of detail the objects should get logged to `console.debug` output.
- * - `'full'` - everything gets logged. This can cause slow-downs for file transfers.
- * - `'stub'` - objects gets shrunk to their `toString` representation: `'[object Object]'`.
- * - `'none'` - nothing gets logged;
- *
- * @param {'none' | 'stub' | 'full'} level
- */
-function getLogger(level) {
-  // eslint-disable-next-line no-console
-  if (level === 'full') return console.debug
-  if (level === 'stub') return stubLogger
-  return noop
-}
-
-function stubLogger(...args) {
-  // eslint-disable-next-line no-console
-  console.debug(args.join(' '))
-}
-function noop() {}

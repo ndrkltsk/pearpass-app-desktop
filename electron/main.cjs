@@ -35,11 +35,25 @@ let debugMode = false
 const pkg = require('../package.json')
 const { getSandboxSafePath, isFlatpakRuntime } = require('./flatpak-paths.cjs')
 const runtimeConfig = require('./runtime-config.cjs')
+const devicePreferences = require('../src/utils/devicePreferences.cjs')
 const {
-  createMainProcessLogger
-} = require('../src/utils/createMainProcessLogger.cjs')
+  getLogPaths,
+  removeLogFiles,
+  setupLogging
+} = require('../src/utils/logHelper.cjs')
 
-const logger = createMainProcessLogger({ app, debugMode })
+const { logger, loggingForced, enableWorkletFileLogging } = setupLogging({
+  app,
+  pkg,
+  debugMode,
+  getStorageDir: () => getStorageDir(),
+  getVaultClient: () => vaultClient
+})
+
+// Effective logging state. Initialized in app.whenReady (after setName, so
+// getStorageDir() resolves correctly). Mutable so the in-app toggle can flip
+// it at runtime via the vault:setLogging IPC.
+let loggingActive = false
 
 /**
  * Emit a structured startup marker to stderr.
@@ -317,7 +331,8 @@ async function startRuntime() {
   emitStartupMarker('STORAGE_PATH_SET', storagePath)
   try {
     vaultClient = new PearpassVaultClient(workletSidecar, storagePath, {
-      debugMode
+      debugMode,
+      logger
     })
     emitStartupMarker('VAULT_CLIENT_READY')
   } catch (error) {
@@ -326,6 +341,10 @@ async function startRuntime() {
       (error && (error.stack || error.message)) || String(error)
     )
     throw error
+  }
+
+  if (loggingActive) {
+    await enableWorkletFileLogging()
   }
 
   vaultClient.on('update', () => {
@@ -421,7 +440,8 @@ async function startWorkletOnly() {
   emitStartupMarker('STORAGE_PATH_SET', storagePath)
   try {
     vaultClient = new PearpassVaultClient(workletSidecar, storagePath, {
-      debugMode
+      debugMode,
+      logger
     })
     emitStartupMarker('VAULT_CLIENT_READY')
   } catch (error) {
@@ -430,6 +450,10 @@ async function startWorkletOnly() {
       (error && (error.stack || error.message)) || String(error)
     )
     throw error
+  }
+
+  if (loggingActive) {
+    await enableWorkletFileLogging()
   }
 
   vaultClient.on('update', () => {
@@ -639,12 +663,71 @@ function registerIPC() {
       delayMs
     })
   )
+
+  ipcMain.handle('vault:openLogsFolder', async () => {
+    const { logsDir, mainPath } = getLogPaths(getStorageDir())
+    fs.mkdirSync(logsDir, { recursive: true })
+    if (fs.existsSync(mainPath)) {
+      shell.showItemInFolder(mainPath)
+    } else {
+      await shell.openPath(logsDir)
+    }
+  })
+
+  ipcMain.handle('vault:isLoggingEnabled', () => ({
+    enabled: loggingActive,
+    forced: loggingForced
+  }))
+
+  ipcMain.handle('vault:setLogging', async (_event, payload) => {
+    if (loggingForced) {
+      return { enabled: true, forced: true }
+    }
+
+    const next = !!(payload && payload.enabled)
+    if (next === loggingActive) {
+      return { enabled: loggingActive, forced: false }
+    }
+
+    loggingActive = next
+    try {
+      devicePreferences.write(getStorageDir(), {
+        loggingEnabled: loggingActive
+      })
+    } catch (err) {
+      logger.warn('MAIN', 'Failed to persist device preferences', err)
+    }
+
+    if (loggingActive) {
+      // Toggle ON: clear any leftover files for a clean session
+      removeLogFiles(getStorageDir())
+      logger.setLogPath(getStorageDir())
+      await enableWorkletFileLogging()
+      return { enabled: true, forced: false }
+    }
+
+    // Toggle OFF: stop worklet writes first, then close main, then delete
+    if (vaultClient) {
+      try {
+        await vaultClient.setLogOptions({ logFile: null })
+      } catch (err) {
+        logger.warn('MAIN', 'setLogOptions(disable) failed', err)
+      }
+    }
+    logger.clearLogPath()
+    removeLogFiles(getStorageDir())
+    return { enabled: false, forced: false }
+  })
 }
 
 app.whenReady().then(async () => {
   emitStartupMarker('PEARPASS_MAIN_READY')
   app.setName(pkg.productName)
-  logger.setLogPath(getStorageDir())
+  const { loggingEnabled } = devicePreferences.read(getStorageDir())
+  loggingActive = loggingForced || loggingEnabled
+  if (loggingActive) {
+    logger.setLogPath(getStorageDir())
+  }
   registerIPC()
   try {
     await startRuntime()

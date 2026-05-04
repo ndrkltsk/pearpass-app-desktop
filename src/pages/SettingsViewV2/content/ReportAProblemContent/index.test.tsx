@@ -42,12 +42,14 @@ jest.mock('@tetherto/pear-apps-lib-feedback', () => ({
 jest.mock('./styles', () => ({
   createStyles: () => ({
     root: {},
-    actions: {}
+    actions: {},
+    diagnostics: {}
   })
 }))
 
 jest.mock('@tetherto/pearpass-lib-ui-kit/icons', () => ({
-  Send: () => null
+  Send: () => null,
+  FolderOpen: () => null
 }))
 
 jest.mock('@tetherto/pearpass-lib-ui-kit', () => ({
@@ -119,14 +121,56 @@ jest.mock('@tetherto/pearpass-lib-ui-kit', () => ({
     >
       {children}
     </button>
+  ),
+  ToggleSwitch: ({
+    checked,
+    onChange,
+    'data-testid': dataTestid,
+    disabled,
+    label
+  }: {
+    checked?: boolean
+    onChange?: (checked: boolean) => void
+    'data-testid'?: string
+    disabled?: boolean
+    label?: string
+  }) => (
+    <label>
+      {label}
+      <input
+        type="checkbox"
+        data-testid={dataTestid}
+        checked={!!checked}
+        disabled={disabled}
+        onChange={(e) => onChange?.(e.target.checked)}
+      />
+    </label>
   )
 }))
 
 const TEST_IDS = {
   root: 'settings-card-report',
   textarea: 'settings-report-textarea',
-  send: 'settings-report-send-button'
+  send: 'settings-report-send-button',
+  openLogs: 'settings-report-open-logs-button',
+  loggingToggle: 'settings-report-logging-toggle'
 } as const
+
+function withElectronAPI(value: unknown, run: () => Promise<void> | void) {
+  const original = window.electronAPI
+  Object.defineProperty(window, 'electronAPI', {
+    configurable: true,
+    writable: true,
+    value
+  })
+  return Promise.resolve(run()).finally(() => {
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      writable: true,
+      value: original
+    })
+  })
+}
 
 describe('ReportAProblemContent', () => {
   beforeEach(() => {
@@ -202,6 +246,84 @@ describe('ReportAProblemContent', () => {
     expect(mockSendGoogle).not.toHaveBeenCalled()
     expect(mockSetToast).toHaveBeenCalledWith({
       message: 'You are offline, please check your internet connection'
+    })
+  })
+
+  it('Open logs folder button calls window.electronAPI.openLogsFolder when logging is on', async () => {
+    const openLogsFolder = jest.fn(() => Promise.resolve())
+    const isLoggingEnabled = jest.fn(() =>
+      Promise.resolve({ enabled: true, forced: false })
+    )
+
+    await withElectronAPI({ openLogsFolder, isLoggingEnabled }, async () => {
+      render(<ReportAProblemContent currentVersion="1.0.0" />)
+
+      // Wait for the initial isLoggingEnabled fetch to settle so the button enables.
+      const btn = await screen.findByTestId(TEST_IDS.openLogs)
+      await waitFor(() => expect(btn).not.toBeDisabled())
+
+      await act(async () => {
+        fireEvent.click(btn)
+      })
+
+      await waitFor(() => {
+        expect(openLogsFolder).toHaveBeenCalledTimes(1)
+      })
+    })
+  })
+
+  it('Open logs folder button is disabled when logging is off', async () => {
+    const isLoggingEnabled = jest.fn(() =>
+      Promise.resolve({ enabled: false, forced: false })
+    )
+
+    await withElectronAPI({ isLoggingEnabled }, async () => {
+      render(<ReportAProblemContent currentVersion="1.0.0" />)
+      const btn = await screen.findByTestId(TEST_IDS.openLogs)
+      // Initial state: enabled=false until the IPC resolves; after, still false.
+      await waitFor(() => expect(isLoggingEnabled).toHaveBeenCalled())
+      expect(btn).toBeDisabled()
+    })
+  })
+
+  it('toggling the diagnostic switch calls setLogging and updates state', async () => {
+    const isLoggingEnabled = jest.fn(() =>
+      Promise.resolve({ enabled: false, forced: false })
+    )
+    const setLogging = jest.fn((enabled: boolean) =>
+      Promise.resolve({ enabled, forced: false })
+    )
+
+    await withElectronAPI({ isLoggingEnabled, setLogging }, async () => {
+      render(<ReportAProblemContent currentVersion="1.0.0" />)
+      const toggle = await screen.findByTestId(TEST_IDS.loggingToggle)
+      await waitFor(() => expect(isLoggingEnabled).toHaveBeenCalled())
+
+      await act(async () => {
+        fireEvent.click(toggle)
+      })
+
+      await waitFor(() => {
+        expect(setLogging).toHaveBeenCalledWith(true)
+      })
+      // Open logs button should now be enabled
+      const btn = screen.getByTestId(TEST_IDS.openLogs)
+      await waitFor(() => expect(btn).not.toBeDisabled())
+    })
+  })
+
+  it('forced=true disables the toggle so the user cannot turn logging off', async () => {
+    const isLoggingEnabled = jest.fn(() =>
+      Promise.resolve({ enabled: true, forced: true })
+    )
+    const setLogging = jest.fn()
+
+    await withElectronAPI({ isLoggingEnabled, setLogging }, async () => {
+      render(<ReportAProblemContent currentVersion="1.0.0" />)
+      const toggle = await screen.findByTestId(TEST_IDS.loggingToggle)
+      await waitFor(() => expect(isLoggingEnabled).toHaveBeenCalled())
+      await waitFor(() => expect(toggle).toBeDisabled())
+      expect(setLogging).not.toHaveBeenCalled()
     })
   })
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 
 import {
   sendGoogleFormFeedback,
@@ -9,8 +9,9 @@ import {
   Form,
   TextArea,
   PageHeader,
+  ToggleSwitch
 } from '@tetherto/pearpass-lib-ui-kit'
-import { Send } from '@tetherto/pearpass-lib-ui-kit/icons'
+import { FolderOpen, Send } from '@tetherto/pearpass-lib-ui-kit/icons'
 
 import {
   GOOGLE_FORM_KEY,
@@ -32,22 +33,68 @@ const OFFLINE_TIMEOUT_MESSAGE =
 const TEST_IDS = {
   root: 'settings-card-report',
   textarea: 'settings-report-textarea',
-  send: 'settings-report-send-button'
+  send: 'settings-report-send-button',
+  openLogs: 'settings-report-open-logs-button',
+  loggingToggle: 'settings-report-logging-toggle'
 } as const
 
 type ReportAProblemContentProps = {
   currentVersion?: string
 }
 
-export const ReportAProblemContent = ({ currentVersion = '' }: ReportAProblemContentProps) => {
+export const ReportAProblemContent = ({
+  currentVersion = ''
+}: ReportAProblemContentProps) => {
   const { t } = useTranslation()
   const { setToast } = useToast()
   const styles = createStyles()
 
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [loggingEnabled, setLoggingEnabled] = useState(false)
+  const [loggingForced, setLoggingForced] = useState(false)
+  const [isTogglingLogging, setIsTogglingLogging] = useState(false)
 
   useGlobalLoading({ isLoading })
+
+  useEffect(() => {
+    const electronAPI = window.electronAPI
+    if (!electronAPI || typeof electronAPI.isLoggingEnabled !== 'function') {
+      return
+    }
+
+    let cancelled = false
+    electronAPI
+      .isLoggingEnabled()
+      .then((state) => {
+        if (cancelled) return
+        setLoggingEnabled(state.enabled)
+        setLoggingForced(state.forced)
+      })
+      .catch((error) =>
+        logger.error('ReportAProblemContent', 'isLoggingEnabled failed:', error)
+      )
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const handleLoggingToggle = useCallback(
+    async (next: boolean) => {
+      if (loggingForced || isTogglingLogging) return
+      setIsTogglingLogging(true)
+      try {
+        const state = await window.electronAPI?.setLogging?.(next)
+        if (state) {
+          setLoggingEnabled(state.enabled)
+          setLoggingForced(state.forced)
+        }
+      } finally {
+        setIsTogglingLogging(false)
+      }
+    },
+    [isTogglingLogging, loggingForced]
+  )
 
   const handleSend = useCallback(async () => {
     if (!message?.trim() || isLoading) {
@@ -125,8 +172,11 @@ export const ReportAProblemContent = ({ currentVersion = '' }: ReportAProblemCon
 
   return (
     <div data-testid={TEST_IDS.root} style={styles.root}>
-      <PageHeader title={t('Report a problem')}
-        subtitle={t('Please describe the problem you’re experiencing. Our team reviews every report to help improve the app.')}
+      <PageHeader
+        title={t('Report a problem')}
+        subtitle={t(
+          'Please describe the problem you’re experiencing. Our team reviews every report to help improve the app.'
+        )}
       />
       <Form
         testID="settings-report-problem-form"
@@ -158,6 +208,40 @@ export const ReportAProblemContent = ({ currentVersion = '' }: ReportAProblemCon
           </Button>
         </div>
       </Form>
+      <div style={styles.diagnostics}>
+        <ToggleSwitch
+          data-testid={TEST_IDS.loggingToggle}
+          checked={loggingEnabled}
+          onChange={(checked) => {
+            void handleLoggingToggle(checked)
+          }}
+          disabled={loggingForced || isTogglingLogging}
+          label={t('Enable diagnostic logging')}
+          description={
+            loggingForced
+              ? t(
+                  'Logging is enabled by this build (nightly or --enable-logging launch flag).'
+                )
+              : t(
+                  'Diagnostic logs help us troubleshoot issues. Enable, reproduce the problem, then share the logs with us.'
+                )
+          }
+        />
+        <div style={styles.actions}>
+          <Button
+            data-testid={TEST_IDS.openLogs}
+            variant="primary"
+            size="small"
+            disabled={!loggingEnabled}
+            onClick={() => {
+              void window.electronAPI?.openLogsFolder?.()
+            }}
+            iconBefore={<FolderOpen />}
+          >
+            {t('Open logs folder')}
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }
