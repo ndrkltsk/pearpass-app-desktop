@@ -12,7 +12,7 @@ import {
 import { test, expect } from '../../fixtures/app.runner.js'
 import testData from '../../fixtures/test-data.js'
 
-test.describe.only('Editing/Deleting PassPhrase Item', () => {
+test.describe('Editing/Deleting PassPhrase Item', () => {
   test.describe.configure({ mode: 'serial' })
 
   let loginPage,
