@@ -65,11 +65,12 @@ class DetailsPage {
   // }
 
   get getItemDetailsTitle() {
-    return this.root.locator('[data-testid^="details-title"]')
+    // v1: dedicated testid; v2: title rendered as text inside details-header-v2
+    return this.root.locator('[data-testid^="details-title"], [data-testid="details-header-v2"]')
   }
 
   async verifyTitle(expectedTitle) {
-    await expect(this.getItemDetailsTitle).toHaveText(expectedTitle)
+    await expect(this.getItemDetailsTitle).toContainText(expectedTitle)
   }
 
   getElementItemDetails(labelOrPlaceholder) {
