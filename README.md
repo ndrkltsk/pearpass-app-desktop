@@ -82,6 +82,8 @@ Visit the official PearPass documentation for step-by-step guides on setup, vaul
 
 **[docs.pass.pears.com](https://docs.pass.pears.com)**
 
+> ⚠️ Intel Mac Support: Intel-based Mac builds are deprecated and provided without official support or active testing. We're keeping them available for now, but use them at your own risk. If you run into issues, feel free to open a ticket. While we can't guarantee a fix, we'd like to know if these builds are still being used!
+
 ---
 
 ## Testing
