@@ -87,11 +87,11 @@ Visit the official PearPass documentation for step-by-step guides on setup, vaul
 
 ## Logging
 
-Off by default. When enabled, logs are written under `<userData>/logs/` — `main.log` from the host process and `core.log` from the vault worker. Sensitive fields known to the redactor (passwords, keys, tokens, etc.) are scrubbed before any sink.
+Off by default. When enabled, logs are written under `<userData>/logs/` — `main.log` from the host process and `core.log` from the vault worker. The worker's sink redacts known sensitive fields (passwords, keys, tokens, etc.) before writing to `core.log`. The host process logger does not redact, so treat anything passed to `logger.*` in `main.cjs` as on-disk-visible in `main.log`.
 
 Three ways to enable:
 
-- **In-app toggle** (Settings → Report a problem → **Enable diagnostic logging**). Persists across launches; toggling on/off resets existing log files for a clean session.
+- **In-app toggle** (Settings → Diagnostics → **Enable logs**). Persists across launches; toggling on/off resets existing log files for a clean session.
 - **Launch flag:** pass `--enable-logging` at startup. Forces logging on regardless of the toggle.
 - **Nightly builds** (`PearPass-nightly`): logging is on automatically and the in-app toggle is locked.
 
