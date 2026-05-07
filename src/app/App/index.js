@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 
 import { useTheme } from '@tetherto/pearpass-lib-ui-kit'
 import { html } from 'htm/react'
@@ -13,6 +13,7 @@ import { AppHeaderContainer } from '../../containers/AppHeaderContainer'
 import { useRouter } from '../../context/RouterContext'
 import { usePearUpdate } from '../../hooks/usePearUpdate'
 import { useSimulatedLoading } from '../../hooks/useSimulatedLoading'
+import { useVaultAccessRevoked } from '../../hooks/useVaultAccessRevoked'
 import { Routes } from '../Routes'
 import { ContentFrame, WindowBackground } from './styles'
 import { isV2 } from '../../utils/designVersion'
@@ -29,6 +30,19 @@ export const App = () => {
 
   useOnExtensionExit()
   useOnExtensionLockOut()
+
+  const { triggerAccessRevoked } = useVaultAccessRevoked()
+  useEffect(() => {
+    // Dev hook: action-bus mechanism is not implemented yet, so for now the
+    // delete handler is fired manually from devtools or tests.
+    if (typeof window === 'undefined') return
+    // eslint-disable-next-line no-underscore-dangle
+    window.__pearpassTriggerAccessRevoked = triggerAccessRevoked
+    return () => {
+      // eslint-disable-next-line no-underscore-dangle
+      delete window.__pearpassTriggerAccessRevoked
+    }
+  }, [triggerAccessRevoked])
 
   const handleLoadingComplete = useCallback(() => {
     setIsLoadingPageComplete(true)
