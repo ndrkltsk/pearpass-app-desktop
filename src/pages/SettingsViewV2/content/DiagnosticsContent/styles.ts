@@ -12,19 +12,11 @@ export const createStyles = () => ({
     boxSizing: 'border-box' as const
   },
 
-  intro: {
+  card: {
     display: 'flex' as const,
     flexDirection: 'column' as const,
     gap: `${rawTokens.spacing8}px`,
-    maxWidth: 560
-  },
-
-  form: {
-    display: 'flex' as const,
-    flexDirection: 'column' as const,
-    flex: 1,
-    minHeight: 0,
-    gap: `${rawTokens.spacing24}px`
+    flexShrink: 0
   },
 
   actions: {

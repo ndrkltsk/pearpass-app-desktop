@@ -35,6 +35,7 @@ import {
   AppPreferencesContent,
   AppVersionContent,
   BlindPeersContent,
+  DiagnosticsContent,
   ExportItemsContent,
   ImportItemsContent,
   LanguageContent,
@@ -54,6 +55,7 @@ export enum SettingsItemKey {
   ExportItems = 'export-items',
   Language = 'language',
   ReportAProblem = 'report-a-problem',
+  Diagnostics = 'diagnostics',
   AppVersion = 'app-version'
 }
 
@@ -91,6 +93,8 @@ const renderActiveContent = (
       return <ExportItemsContent />
     case SettingsItemKey.ReportAProblem:
       return <ReportAProblemContent currentVersion={currentVersion} />
+    case SettingsItemKey.Diagnostics:
+      return <DiagnosticsContent />
     case SettingsItemKey.Language:
       return <LanguageContent />
     case SettingsItemKey.AppVersion:
@@ -184,6 +188,11 @@ export const SettingsViewV2 = () => {
           {
             key: SettingsItemKey.ReportAProblem,
             label: t('Report a problem'),
+            icon: BugReportFilled
+          },
+          {
+            key: SettingsItemKey.Diagnostics,
+            label: t('Diagnostics'),
             icon: BugReportFilled
           },
           {
