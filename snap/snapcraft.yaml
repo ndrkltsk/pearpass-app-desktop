@@ -1,0 +1,157 @@
+name: pearpass
+adopt-info: pearpass
+title: PearPass
+summary: A secure, decentralized and fully local password manager
+description: |
+  PearPass is a privacy-focused password manager. Vaults sync peer-to-peer
+  between your devices via the Pear runtime — no cloud, no servers, no
+  account.
+license: Apache-2.0
+base: core22
+grade: stable
+confinement: strict
+compression: lzo
+
+architectures:
+  - build-on: amd64
+  - build-on: arm64
+
+apps:
+  pearpass:
+    command: usr/bin/pearpass
+    common-id: com.pears.pass
+    desktop: usr/share/applications/com.pears.pass.desktop
+    extensions: [gnome]
+    plugs:
+      - home
+      - network
+      - network-bind
+      - desktop
+      - desktop-legacy
+      - wayland
+      - x11
+      - unity7
+      - opengl
+      - removable-media
+      - browser-native-messaging
+
+  native-host:
+    # Browsers exec /snap/bin/pearpass.native-host directly (the manifest's
+    # `path` field). snapd routes that to this app slot, which pipes JSON
+    # over stdio through Electron's embedded Node.
+    command: usr/bin/pearpass-native-host
+    extensions: [gnome]
+    plugs:
+      - home
+      - network
+      - network-bind
+
+# Directory-scoped (not file-scoped): file scope's AppArmor expansion
+# `<file>{,/,/**}` blocks mkdir of the parent, and browsers don't create
+# NativeMessagingHosts/ themselves (verified for host + snap Firefox 150).
+# Snap only writes com.pears.pass.json inside each granted dir.
+# brave/current resolves via snap-Brave's revision symlink — smoke-tested
+# with Firefox, retest under snap-Brave.
+plugs:
+  browser-native-messaging:
+    interface: personal-files
+    write:
+      - $HOME/.mozilla/native-messaging-hosts
+      - $HOME/.config/chromium/NativeMessagingHosts
+      - $HOME/.config/google-chrome/NativeMessagingHosts
+      - $HOME/.config/microsoft-edge/NativeMessagingHosts
+      - $HOME/.config/BraveSoftware/Brave-Browser/NativeMessagingHosts
+      - $HOME/snap/chromium/common/chromium/NativeMessagingHosts
+      - $HOME/snap/firefox/common/.mozilla/native-messaging-hosts
+      - $HOME/snap/brave/current/.config/BraveSoftware/Brave-Browser/NativeMessagingHosts
+
+parts:
+  pearpass:
+    plugin: nil
+    source: snap/local
+    build-packages:
+      - jq
+    # stage-packages intentionally empty: Electron bundles ffmpeg/GL/vulkan,
+    # the gnome extension + core22 base provide GTK/NSS/dbus. Add specific
+    # .so files here if a missing-symbol error surfaces at runtime.
+    override-build: |
+      set -eux
+
+      # Snap version follows package.json; `adopt-info: pearpass` lets
+      # this part publish the value via craftctl.
+      craftctl set version="$(jq -r .version "${CRAFT_PROJECT_DIR}/package.json")"
+
+      # build-snap.sh stages the Electron payload as either snap/local/unpacked/
+      # (preferred, pre-extracted from electron-builder) or snap/local/PearPass.AppImage
+      # (fallback, extracted here via AppRun).
+      UNPACKED="${CRAFT_PART_SRC}/unpacked"
+      APPIMAGE="${CRAFT_PART_SRC}/PearPass.AppImage"
+
+      install -d "${CRAFT_PART_INSTALL}/lib/pearpass"
+
+      if [ -d "${UNPACKED}" ]; then
+        cp -a "${UNPACKED}/." "${CRAFT_PART_INSTALL}/lib/pearpass/"
+      elif [ -f "${APPIMAGE}" ]; then
+        WORKDIR="$(mktemp -d)"
+        cp "${APPIMAGE}" "${WORKDIR}/PearPass.AppImage"
+        chmod +x "${WORKDIR}/PearPass.AppImage"
+        cd "${WORKDIR}"
+        ./PearPass.AppImage --appimage-extract >/dev/null
+        cp -a squashfs-root/. "${CRAFT_PART_INSTALL}/lib/pearpass/"
+        cd -
+      else
+        echo "Expected ${UNPACKED}/ or ${APPIMAGE}" >&2
+        echo "Stage one via scripts/build-snap.sh, not snapcraft directly." >&2
+        exit 1
+      fi
+      chmod +x "${CRAFT_PART_INSTALL}/lib/pearpass/pearpass-app-desktop" || true
+      chmod +x "${CRAFT_PART_INSTALL}/lib/pearpass/pearpass-app-desktop.bin" || true
+
+      install -d "${CRAFT_PART_INSTALL}/usr/bin"
+
+      # Main GUI launcher. --no-sandbox + ozone X11 mirrors the flatpak
+      # launcher; Wayland auto-detect inside snap is unreliable and X11 via
+      # XWayland works on both session types.
+      cat > "${CRAFT_PART_INSTALL}/usr/bin/pearpass" <<'WRAPPER'
+      #!/bin/sh
+      APP_ROOT="${SNAP}/lib/pearpass"
+      export LD_LIBRARY_PATH="${APP_ROOT}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+      export GDK_BACKEND=x11
+      cd "${APP_ROOT}"
+      exec "${APP_ROOT}/pearpass-app-desktop" \
+        --no-sandbox \
+        --disable-gpu-sandbox \
+        --disable-dev-shm-usage \
+        --enable-features=UseOzonePlatform \
+        --ozone-platform=x11 \
+        "$@"
+      WRAPPER
+      chmod +x "${CRAFT_PART_INSTALL}/usr/bin/pearpass"
+
+      # Native messaging host. Bypass the launcher (which forces
+      # --no-sandbox) and call .bin directly: ELECTRON_RUN_AS_NODE rejects
+      # --no-sandbox and Chrome would see "Native host has exited".
+      cat > "${CRAFT_PART_INSTALL}/usr/bin/pearpass-native-host" <<'NMHOST'
+      #!/bin/sh
+      APP_ROOT="${SNAP}/lib/pearpass"
+      export LD_LIBRARY_PATH="${APP_ROOT}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+      export ELECTRON_RUN_AS_NODE=1
+      exec "${APP_ROOT}/pearpass-app-desktop.bin" \
+        "${APP_ROOT}/resources/app/dist/native-messaging-bridge.bundle.cjs" \
+        "$@"
+      NMHOST
+      chmod +x "${CRAFT_PART_INSTALL}/usr/bin/pearpass-native-host"
+
+      # Reuse flatpak desktop entry + metainfo + icon; sed below patches
+      # Exec/Icon for snap-resolved paths.
+      install -Dm644 "${CRAFT_PROJECT_DIR}/flatpak/com.pears.pass.desktop" \
+        "${CRAFT_PART_INSTALL}/usr/share/applications/com.pears.pass.desktop"
+      install -Dm644 "${CRAFT_PROJECT_DIR}/flatpak/com.pears.pass.metainfo.xml" \
+        "${CRAFT_PART_INSTALL}/usr/share/metainfo/com.pears.pass.metainfo.xml"
+      install -Dm644 "${CRAFT_PROJECT_DIR}/assets/linux/icon.png" \
+        "${CRAFT_PART_INSTALL}/meta/gui/pearpass.png"
+
+      sed -i 's|^Exec=.*|Exec=pearpass %U|' \
+        "${CRAFT_PART_INSTALL}/usr/share/applications/com.pears.pass.desktop"
+      sed -i 's|^Icon=.*|Icon=${SNAP}/meta/gui/pearpass.png|' \
+        "${CRAFT_PART_INSTALL}/usr/share/applications/com.pears.pass.desktop"

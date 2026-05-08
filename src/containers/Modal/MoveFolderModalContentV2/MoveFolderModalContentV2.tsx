@@ -12,8 +12,10 @@ import { useModal } from '../../../context/ModalContext'
 import { useGlobalLoading } from '../../../context/LoadingContext'
 import { useScrollOverflow } from '../../../hooks/useScrollOverflow'
 import { useTranslation } from '../../../hooks/useTranslation'
-import { Folder } from '@tetherto/pearpass-lib-ui-kit/icons'
+import { Folder, Layers } from '@tetherto/pearpass-lib-ui-kit/icons'
 import { RecordAvatar } from '../../../components/RecordAvatar'
+
+const CHIP_ID_ALL = '__all__'
 
 export type MoveFolderRecord = Record<string, unknown> & {
   id: string
@@ -63,7 +65,7 @@ export const MoveFolderModalContentV2 = ({
 
   const { data: folders, isLoading: isLoadingFolders } = useFolders()
 
-  const { updateFolder, isLoading: isUpdating } = useRecords({
+  const { updateFolder, updateRecords, isLoading: isUpdating } = useRecords({
     onCompleted: closeModal
   })
 
@@ -78,31 +80,45 @@ export const MoveFolderModalContentV2 = ({
       (folders?.customFolders ?? {}) as Record<string, { name: string }>
     )
 
-    return customFolders
+    const customOptions = customFolders
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(({ name }) => ({
         id: name,
         label: name,
         icon: <Folder width={20} height={20} style={{ color: iconColor }} />
       }))
-  }, [folders, iconColor])
 
-  const recordIdsKey = records.map((r) => r.id).sort().join(',')
-  const customFoldersListKey = Object.keys(
-    (folders?.customFolders ?? {}) as Record<string, unknown>
-  )
-    .sort()
-    .join(',')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+    return [
+      {
+        id: CHIP_ID_ALL,
+        label: t('All Items'),
+        icon: <Layers width={20} height={20} style={{ color: iconColor }} />
+      },
+      ...customOptions
+    ]
+  }, [folders, iconColor, t])
+
+  // Preselect the chip the records currently sit at
+  const defaultSelectedId = useMemo<string | null>(() => {
+    if (records.length === 0) return null
+    const firstFolder = records[0].folder
+    if (!records.every((r) => r.folder === firstFolder)) return null
+    if (!firstFolder) return CHIP_ID_ALL
+    return folders?.customFolders?.[firstFolder] ? firstFolder : null
+  }, [records, folders])
+
+  const [selectedId, setSelectedId] = useState<string | null>(defaultSelectedId)
 
   useEffect(() => {
-    setSelectedId(null)
-  }, [recordIdsKey, customFoldersListKey])
+    setSelectedId(defaultSelectedId)
+  }, [defaultSelectedId])
 
   const atDestination =
     !!selectedId &&
     records.length > 0 &&
-    records.every((r) => r.folder === selectedId)
+    (selectedId === CHIP_ID_ALL
+      ? records.every((r) => !r.folder)
+      : records.every((r) => r.folder === selectedId))
 
   const isMoveDisabled = isLoading || !selectedId || atDestination
 
@@ -121,7 +137,11 @@ export const MoveFolderModalContentV2 = ({
 
   const handleMove = async () => {
     if (!selectedId || isMoveDisabled) return
-    await updateFolder(records.map((r) => r.id), selectedId)
+    if (selectedId === CHIP_ID_ALL) {
+      await updateRecords(records.map((r) => ({ ...r, folder: null })))
+    } else {
+      await updateFolder(records.map((r) => r.id), selectedId)
+    }
     onCompleted?.()
   }
 

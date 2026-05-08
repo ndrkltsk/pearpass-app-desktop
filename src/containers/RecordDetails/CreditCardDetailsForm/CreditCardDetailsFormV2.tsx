@@ -150,7 +150,7 @@ export const CreditCardDetailsFormV2 = ({
         <MultiSlotInput testID="card-details-multi-slot-input">
           {hasName && (
             <InputField
-              label={t('Name on card')}
+              label={t('Cardholder Name')}
               placeholder={t('John Smith')}
               readOnly
               copyable
@@ -163,7 +163,7 @@ export const CreditCardDetailsFormV2 = ({
 
           {hasNumber && (
             <InputField
-              label={t('Number on card')}
+              label={t('Card Number')}
               placeholder={t('1234 1234 1234 1234')}
               readOnly
               copyable
@@ -176,7 +176,7 @@ export const CreditCardDetailsFormV2 = ({
 
           {hasExpireDate && (
             <InputField
-              label={t('Date of expire')}
+              label={t('Expiration Date')}
               placeholder={t('MM YY')}
               readOnly
               copyable
@@ -189,7 +189,7 @@ export const CreditCardDetailsFormV2 = ({
 
           {hasSecurityCode && (
             <PasswordField
-              label={t('Security code')}
+              label={t('Security Code')}
               placeholder={t('123')}
               readOnly
               copyable
@@ -202,7 +202,7 @@ export const CreditCardDetailsFormV2 = ({
 
           {hasPinCode && (
             <PasswordField
-              label={t('Pin code')}
+              label={t('PIN')}
               placeholder={t('1234')}
               readOnly
               copyable

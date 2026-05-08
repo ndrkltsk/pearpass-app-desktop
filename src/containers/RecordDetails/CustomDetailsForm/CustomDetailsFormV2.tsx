@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react'
 import { useForm } from '@tetherto/pear-apps-lib-ui-react-hooks'
 import {
   AttachmentField,
+  InputField,
   MultiSlotInput,
   PasswordField,
   Text,
@@ -37,6 +38,7 @@ type CustomRecord = {
   attachments?: Attachment[]
   data: {
     title?: string
+    note?: string
     customFields?: CustomField[]
   }
 }
@@ -47,6 +49,7 @@ type CustomDetailsFormV2Props = {
 }
 
 type CustomDetailsFormValues = {
+  note: string
   customFields: CustomField[]
   folder?: string
   attachments: Attachment[]
@@ -69,6 +72,7 @@ export const CustomDetailsFormV2 = ({
 
   const initialValues = useMemo<CustomDetailsFormValues>(
     () => ({
+      note: initialRecord?.data?.note ?? '',
       customFields: initialRecord?.data?.customFields ?? [],
       folder: selectedFolder ?? initialRecord?.folder,
       attachments: initialRecord?.attachments ?? []
@@ -90,6 +94,7 @@ export const CustomDetailsFormV2 = ({
 
   const hasCustomFields = !!values.customFields?.length
   const hasAttachments = !!values.attachments?.length
+  const hasNote = !!(values.note as string)?.length
 
   const handleAttachmentPress = (attachment: Attachment) => {
     if (!attachment?.buffer || !attachment?.name) return
@@ -119,11 +124,26 @@ export const CustomDetailsFormV2 = ({
 
   return (
     <div style={styles.container}>
-      {(hasAttachments || hasCustomFields) && (
+      {(hasAttachments || hasCustomFields || hasNote) && (
         <div style={styles.section}>
           <Text variant="caption" color={theme.colors.colorTextSecondary}>
             {t('Additional')}
           </Text>
+
+          {hasNote && (
+            <MultiSlotInput testID="comments-multi-slot-input">
+              <InputField
+                label={t('Comment')}
+                value={(values.note as string) ?? ''}
+                placeholder={t('Enter Comment')}
+                readOnly
+                copyable
+                onCopy={copyToClipboard}
+                isGrouped
+                testID="comments-multi-slot-input-slot-0"
+              />
+            </MultiSlotInput>
+          )}
 
           {hasAttachments && (
             <MultiSlotInput testID="attachments-multi-slot-input">

@@ -122,7 +122,7 @@ export const NoteDetailsFormV2 = ({
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
   }
-
+  
   return (
     <div style={styles.container}>
       {hasNote && (
@@ -133,8 +133,8 @@ export const NoteDetailsFormV2 = ({
 
           <MultiSlotInput testID="note-multi-slot-input">
             <InputField
-              label={t('Comment')}
-              placeholder={t('Enter Comment')}
+              label={t('Note')}
+              placeholder={t('Enter Note')}
               readOnly
               copyable
               onCopy={copyToClipboard}

@@ -62,6 +62,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <!--
+      Prepend a new <release> entry (newest first) on every release.
+      AppStream renders this as the user-visible changelog in GNOME Software,
+      KDE Discover, snapcraft.io, and flathub. The snap version itself is
+      sourced from package.json via craftctl in snap/snapcraft.yaml, so the
+      list here is for changelog content only — not a build input.
+    -->
     <release version="1.0.1" date="2024-12-19">
       <description>
         <p>Latest stable release of PearPass.</p>

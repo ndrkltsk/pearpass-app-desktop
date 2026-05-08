@@ -31,7 +31,14 @@ function getWindowsKitVersion() {
 const packagerConfig = {
   icon: path.join(__dirname, 'assets', 'win32', 'icon'),
   protocols: [{ name: appName, schemes: [pkg.name] }],
-  derefSymlinks: true
+  derefSymlinks: true,
+  ignore: [
+    // RN deps — bundled by esbuild, never required at runtime
+    /(^|\/)node_modules\/react-native(\/|$)/,
+    /(^|\/)node_modules\/@react-native(\/|$)/,
+    /^\/e2e($|\/)/,
+    /^\/docs($|\/)/,
+  ]
 }
 
 /** @type {import('@electron-forge/shared-types').ForgeConfig} */

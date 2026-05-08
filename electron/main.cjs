@@ -33,7 +33,11 @@ let debugMode = false
 })()
 
 const pkg = require('../package.json')
-const { getSandboxSafePath, isFlatpakRuntime } = require('./flatpak-paths.cjs')
+const {
+  getSandboxSafePath,
+  isFlatpakRuntime,
+  isSnapRuntime
+} = require('./flatpak-paths.cjs')
 const runtimeConfig = require('./runtime-config.cjs')
 const devicePreferences = require('../src/utils/devicePreferences.cjs')
 const {
@@ -144,9 +148,9 @@ async function resolveRuntimeStorageDir() {
   let storageDir = getStorageDir()
   const linkId = upgrade.replace(/^pear:\/\//, '')
 
-  if (isFlatpakRuntime()) {
+  if (isFlatpakRuntime() || isSnapRuntime()) {
     storageDir = path.join(storageDir, 'app-storage', 'by-dkey', linkId)
-    logger.info('[MAIN]', 'Using Flatpak per-link storage root:', storageDir)
+    logger.info('[MAIN]', 'Using sandbox per-link storage root:', storageDir)
     return storageDir
   }
 

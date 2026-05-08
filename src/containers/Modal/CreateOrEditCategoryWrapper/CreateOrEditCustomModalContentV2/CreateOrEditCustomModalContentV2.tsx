@@ -32,11 +32,13 @@ import { useGetMultipleFiles } from '../../../../hooks/useGetMultipleFiles'
 import { getFilteredAttachmentsById } from '../../../../utils/getFilteredAttachmentsById'
 import { handleFileSelect } from '../../../../utils/handleFileSelect'
 import { UploadFilesModalContentV2 } from '../../UploadFilesModalContentV2'
+import { FolderDropdownV2 } from '../../../../components/FolderDropdown/FolderDropdownV2'
 
 export type CreateOrEditCustomModalContentV2Props = {
   initialRecord?: {
     data: {
       title: string
+      note?: string
       customFields: { type: string; name?: string; note?: string }[]
       attachments: { id: string; name: string }[]
       [key: string]: unknown
@@ -86,6 +88,7 @@ export const CreateOrEditCustomModalContentV2 = ({
 
   const schema = Validator.object({
     title: Validator.string().required(t('Title is required')),
+    note: Validator.string(),
     customFields: Validator.array().items(
       Validator.object({
         note: Validator.string()
@@ -103,6 +106,7 @@ export const CreateOrEditCustomModalContentV2 = ({
   const { register, handleSubmit, registerArray, values, setValue } = useForm({
     initialValues: {
       title: initialRecord?.data?.title ?? '',
+      note: initialRecord?.data?.note ?? '',
       customFields: initialRecord?.data?.customFields?.length
         ? initialRecord.data.customFields
         : [{ type: 'note', name: 'note', note: '' }],
@@ -134,6 +138,7 @@ export const CreateOrEditCustomModalContentV2 = ({
       data: {
         ...(initialRecord?.data ? initialRecord.data : {}),
         title: formValues.title,
+        note: formValues.note,
         customFields: (
           (formValues.customFields as Array<{ type: string; note?: string }>) ??
           []
@@ -167,6 +172,7 @@ export const CreateOrEditCustomModalContentV2 = ({
   const isEdit = !!initialRecord
 
   const titleField = register('title')
+  const noteField = register('note')
 
   return (
     <Dialog
@@ -189,7 +195,7 @@ export const CreateOrEditCustomModalContentV2 = ({
             variant="primary"
             size="small"
             type="button"
-            disabled={isLoading}
+            disabled={isLoading || (!isEdit && !values.title?.trim())}
             isLoading={isLoading}
             onClick={() => handleSubmit(onSubmit)()}
             data-testid="createoredit-custom-button-save-v2"
@@ -219,6 +225,24 @@ export const CreateOrEditCustomModalContentV2 = ({
           </Text>
         </div>
 
+        <FolderDropdownV2
+          selectedFolder={values?.folder}
+          onFolderSelect={(name) =>
+            setValue('folder', name === values.folder ? '' : name)
+          }
+        />
+
+        <MultiSlotInput testID="createoredit-custom-comments-slot-v2">
+          <InputField
+            label={t('Comment')}
+            placeholder={t('Enter Comment')}
+            value={noteField.value}
+            onChange={(e) => noteField.onChange(e.target.value)}
+            error={noteField.error || undefined}
+            testID="createoredit-custom-input-comment-v2"
+          />
+        </MultiSlotInput>
+
         <MultiSlotInput
           testID="createoredit-custom-attachments-slot-v2"
           actions={
@@ -236,47 +260,47 @@ export const CreateOrEditCustomModalContentV2 = ({
         >
           {values.attachments.length > 0
             ? values.attachments.map(
-                (
-                  attachment: {
-                    id?: string
-                    tempId?: string
-                    name: string
-                  },
-                  index: number
-                ) => (
-                  <UiKitAttachmentField
-                    key={attachment.id || attachment.tempId}
-                    label={t('Attachment')}
-                    value={attachment.name}
-                    testID={`createoredit-custom-attachment-v2-${index}`}
-                    rightSlot={
-                      <Button
-                        variant="tertiary"
-                        size="small"
-                        type="button"
-                        aria-label={t('Delete File')}
-                        iconBefore={
-                          <TrashOutlined
-                            width={16}
-                            height={16}
-                            color={theme.colors.colorTextPrimary}
-                          />
-                        }
-                        onClick={() =>
-                          setValue(
-                            ATTACHMENTS_FIELD_KEY,
-                            getFilteredAttachmentsById(
-                              values.attachments,
-                              attachment
-                            )
+              (
+                attachment: {
+                  id?: string
+                  tempId?: string
+                  name: string
+                },
+                index: number
+              ) => (
+                <UiKitAttachmentField
+                  key={attachment.id || attachment.tempId}
+                  label={t('Attachment')}
+                  value={attachment.name}
+                  testID={`createoredit-custom-attachment-v2-${index}`}
+                  rightSlot={
+                    <Button
+                      variant="tertiary"
+                      size="small"
+                      type="button"
+                      aria-label={t('Delete File')}
+                      iconBefore={
+                        <TrashOutlined
+                          width={16}
+                          height={16}
+                          color={theme.colors.colorTextPrimary}
+                        />
+                      }
+                      onClick={() =>
+                        setValue(
+                          ATTACHMENTS_FIELD_KEY,
+                          getFilteredAttachmentsById(
+                            values.attachments,
+                            attachment
                           )
-                        }
-                        data-testid={`createoredit-custom-button-deleteattachment-v2-${index}`}
-                      />
-                    }
-                  />
-                )
+                        )
+                      }
+                      data-testid={`createoredit-custom-button-deleteattachment-v2-${index}`}
+                    />
+                  }
+                />
               )
+            )
             : null}
           <UiKitAttachmentField
             label={t('Attachment')}

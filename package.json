@@ -1,7 +1,7 @@
 {
   "name": "pearpass-app-desktop",
   "productName": "PearPass",
-  "version": "1.6.0",
+  "version": "2.0.0",
   "description": "PearPass password manager",
   "author": "PearPass",
   "main": "electron/main.cjs",
@@ -46,30 +46,6 @@
         "AppImage"
       ],
       "artifactName": "${productName}.${ext}"
-    },
-    "snap": {
-      "base": "core22",
-      "confinement": "classic",
-      "grade": "stable",
-      "summary": "A fully local, open-source password manager for privacy and control",
-      "artifactName": "${productName}_${version}_${arch}.${ext}",
-      "plugs": [
-        "default",
-        {
-          "dot-config-pear": {
-            "interface": "personal-files",
-            "write": [
-              "$HOME/.config/pear"
-            ]
-          }
-        },
-        {
-          "shmem": {
-            "interface": "shared-memory",
-            "private": true
-          }
-        }
-      ]
     },
     "toolsets": {
       "appimage": "1.0.2"
@@ -204,7 +180,7 @@
     "patch-package": "^8.0.1",
     "pear-build": "^1.1.0",
     "pear-interface": "1.0.0",
-    "pear-runtime-updater": "^2.0.2",
+    "pear-runtime-updater": "^3.0.10",
     "prettier": "3.4.2",
     "typescript": "5.9.3",
     "wait-on": "^8.0.0",
@@ -252,7 +228,7 @@
     "pear-electron": "1.7.25-rc.0",
     "pear-ipc": "6.4.0",
     "pear-run": "1.0.5",
-    "pear-runtime": "^0.5.0",
+    "pear-runtime": "^1.1.1",
     "pear-runtime-legacy-storage": "^1.1.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",

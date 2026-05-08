@@ -12,7 +12,9 @@
     "index.js",
     "packages/**/*",
     "assets/**/*",
-    "src/utils/**/*"
+    "src/utils/**/*",
+    "!**/node_modules/react-native/**/*",
+    "!**/node_modules/@react-native/**/*"
   ],
   "extraResources": [
     {

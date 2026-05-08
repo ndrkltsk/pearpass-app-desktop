@@ -188,7 +188,7 @@ describe('getNativeMessagingLocations', () => {
   it('should return correct browser entries for Linux including snap', () => {
     os.platform.mockReturnValue('linux')
     const { browsers } = getNativeMessagingLocations()
-    expect(browsers).toHaveLength(7)
+    expect(browsers).toHaveLength(8)
     expect(browsers[0].name).toBe('Google Chrome')
     expect(browsers[0].manifestPath).toContain('google-chrome')
     expect(browsers[0].browserDir).toBeNull()
@@ -207,6 +207,11 @@ describe('getNativeMessagingLocations', () => {
     expect(browsers[6].manifestPath).toContain(
       '.mozilla/native-messaging-hosts'
     )
+    expect(browsers[7].name).toBe('Firefox (Snap)')
+    expect(browsers[7].manifestPath).toContain(
+      'snap/firefox/common/.mozilla/native-messaging-hosts'
+    )
+    expect(browsers[7].browserDir).toBeNull()
   })
 
   it('should return correct browser entries with registry keys for Windows', () => {
@@ -237,8 +242,8 @@ describe('cleanupNativeMessaging', () => {
     os.platform.mockReturnValue('linux')
     const result = await cleanupNativeMessaging()
     expect(result.success).toBe(true)
-    expect(result.message).toContain('Removed 7 manifest file')
-    expect(fs.unlink).toHaveBeenCalledTimes(7)
+    expect(result.message).toContain('Removed 8 manifest file')
+    expect(fs.unlink).toHaveBeenCalledTimes(8)
   })
 
   it('should remove manifest files on macOS', async () => {
@@ -466,7 +471,39 @@ describe('setupNativeMessaging', () => {
       bridgePath: MOCK_BRIDGE_PATH
     })
     expect(result.success).toBe(true)
-    // Linux installs always write: 1 executable + 7 browser manifests.
-    expect(fs.writeFile).toHaveBeenCalledTimes(8)
+    // Linux installs always write: 1 executable + 8 browser manifests.
+    expect(fs.writeFile).toHaveBeenCalledTimes(9)
+  })
+
+  it('under snap, skips the wrapper and points manifests at /snap/bin/<name>.native-host', async () => {
+    os.platform.mockReturnValue('linux')
+    const prevSnapName = process.env.SNAP_NAME
+    const prevSnapRealHome = process.env.SNAP_REAL_HOME
+    process.env.SNAP_NAME = 'pearpass'
+    process.env.SNAP_REAL_HOME = '/home/testuser'
+    try {
+      const result = await setupNativeMessaging({
+        userDataPath: MOCK_USER_DATA_PATH,
+        execPath: MOCK_EXEC_PATH,
+        bridgePath: MOCK_BRIDGE_PATH
+      })
+      expect(result.success).toBe(true)
+      // 8 browser manifests, no wrapper executable.
+      expect(fs.writeFile).toHaveBeenCalledTimes(8)
+      // Every chmod is the manifest 0o644; no wrapper 0o755.
+      for (const [, mode] of fs.chmod.mock.calls) {
+        expect(mode).toBe(0o644)
+      }
+      // Every manifest's path field is the snapd-managed entry.
+      for (const [, contents] of fs.writeFile.mock.calls) {
+        const manifest = JSON.parse(contents)
+        expect(manifest.path).toBe('/snap/bin/pearpass.native-host')
+      }
+    } finally {
+      if (prevSnapName === undefined) delete process.env.SNAP_NAME
+      else process.env.SNAP_NAME = prevSnapName
+      if (prevSnapRealHome === undefined) delete process.env.SNAP_REAL_HOME
+      else process.env.SNAP_REAL_HOME = prevSnapRealHome
+    }
   })
 })

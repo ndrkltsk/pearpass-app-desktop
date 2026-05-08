@@ -232,8 +232,8 @@ export const SidebarV2 = () => {
           >
             <div style={styles.vaultNameRow}>
               <div style={styles.vaultNameText}>
-                <Text variant="labelEmphasized" numberOfLines={1}>
-                  {vaultData?.name ?? t('Personal Vault')}
+                <Text variant="labelEmphasized">
+                  {vaultData?.name ?? t('Personal')}
                 </Text>
               </div>
               <ExpandMore width={16} height={16} style={chevronStyle} />
@@ -252,7 +252,7 @@ export const SidebarV2 = () => {
       <div style={styles.scrollContainer}>
         <div style={styles.scrollArea}>
         {isVaultSelectorOpen && (
-          <VaultSelector />
+          <VaultSelector onClose={() => setIsVaultSelectorOpen(false)} />
         )}
 
         {!isVaultSelectorOpen && (

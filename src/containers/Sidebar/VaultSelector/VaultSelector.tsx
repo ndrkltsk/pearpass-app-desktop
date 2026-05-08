@@ -17,6 +17,7 @@ import {
 } from '@tetherto/pearpass-lib-ui-kit'
 import {
   Add,
+  Devices,
   EditOutlined,
   Key,
   LockFilled,
@@ -35,9 +36,14 @@ import { AddDeviceModalContentV2 } from '../../Modal/AddDeviceModalContentV2/Add
 import { CreateOrEditVaultModalContentV2 } from '../../Modal/CreateOrEditVaultModalContentV2/CreateOrEditVaultModalContentV2'
 import { DeleteVaultModalContent } from '../../Modal/DeleteVaultModalContent'
 import { ModifyVaultModalContent } from '../../Modal/ModifyVaultModalContent'
+import { PairedDevicesModalContent } from '../../Modal/PairedDevicesModalContent'
 import { useVaultSwitch } from '../../../hooks/useVaultSwitch'
 
-export const VaultSelector = () => {
+type VaultSelectorProps = {
+  onClose?: () => void
+}
+
+export const VaultSelector = ({ onClose }: VaultSelectorProps = {}) => {
   const { t } = useTranslation()
   const { theme } = useTheme()
   const styles = createStyles(theme.colors)
@@ -76,7 +82,10 @@ export const VaultSelector = () => {
     setModal(
       <CreateOrEditVaultModalContentV2
         onClose={closeModal}
-        onSuccess={closeModal}
+        onSuccess={() => {
+          closeModal()
+          onClose?.()
+        }}
       />
     )
   }
@@ -85,6 +94,7 @@ export const VaultSelector = () => {
     if (activeVault?.id !== vault.id) {
       void switchVault(vault)
     }
+    onClose?.()
   }
 
   const handleInvite = (vault: Vault) => {
@@ -111,6 +121,10 @@ export const VaultSelector = () => {
 
   const handleDelete = (vault: Vault) => {
     setModal(<DeleteVaultModalContent vaultId={vault.id} />)
+  }
+
+  const handleViewDevices = () => {
+    setModal(<PairedDevicesModalContent />)
   }
 
   return (
@@ -146,6 +160,7 @@ export const VaultSelector = () => {
             onSelect={handleVaultClick}
             onInvite={handleInvite}
             onRename={handleRename}
+            onViewDevices={handleViewDevices}
             onManageMembers={handleInvite}
             onSetPassword={handleSetPassword}
             onDelete={handleDelete}
@@ -165,6 +180,7 @@ type VaultRowProps = {
   onSelect: (vault: Vault) => void
   onInvite: (vault: Vault) => void
   onRename: (vault: Vault) => void
+  onViewDevices: () => void
   onManageMembers: (vault: Vault) => void
   onSetPassword: (vault: Vault) => void
   onDelete: (vault: Vault) => void
@@ -179,6 +195,7 @@ const VaultRow = ({
   onSelect,
   onInvite,
   onRename,
+  onViewDevices,
   onManageMembers,
   onSetPassword,
   onDelete
@@ -240,6 +257,16 @@ const VaultRow = ({
             label={t('Rename')}
             testID={`vault-row-rename-${vault.id}`}
             onClick={withMenuClose(onRename)}
+          />
+          <NavbarListItem
+            size="small"
+            icon={<Devices width={16} height={16} color={iconPrimary.color} />}
+            label={t('View Paired Devices')}
+            testID={`vault-row-devices-${vault.id}`}
+            onClick={() => {
+              setMenuOpen(false)
+              onViewDevices()
+            }}
           />
           {UNSUPPORTED && (
             <>

@@ -1,7 +1,9 @@
 const {
   getFlatpakCompatRoots,
   getSandboxSafePath,
+  getSnapRealHome,
   isFlatpakRuntime,
+  isSnapRuntime,
   mapFlatpakPathToSandbox
 } = require('./flatpak-paths.cjs')
 
@@ -34,6 +36,27 @@ describe('flatpak path helpers', () => {
         { env }
       )
     ).toBe('/home/alvaro/.config/PearPass')
+  })
+
+  it('detects snap via SNAP_NAME', () => {
+    expect(isSnapRuntime({ env: { SNAP_NAME: 'pearpass' } })).toBe(true)
+    expect(isSnapRuntime({ env: {} })).toBe(false)
+  })
+
+  it('returns SNAP_REAL_HOME inside snap, HOME otherwise', () => {
+    expect(
+      getSnapRealHome({
+        env: {
+          SNAP_NAME: 'pearpass',
+          SNAP_REAL_HOME: '/home/alvaro',
+          HOME: '/home/alvaro/snap/pearpass/current'
+        }
+      })
+    ).toBe('/home/alvaro')
+    expect(getSnapRealHome({ env: { HOME: '/home/alvaro' } })).toBe(
+      '/home/alvaro'
+    )
+    expect(getSnapRealHome({ env: {} })).toBe('')
   })
 
   it('returns sandbox-safe path only when running inside flatpak', () => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 
 import {
   Button,
@@ -27,7 +27,13 @@ import {
   Translate
 } from '@tetherto/pearpass-lib-ui-kit/icons'
 
+import { UnsavedChangesModalContent } from '../../containers/Modal/UnsavedChangesModalContent'
+import { useModal } from '../../context/ModalContext'
 import { useRouter } from '../../context/RouterContext'
+import {
+  UnsavedChangesProvider,
+  useUnsavedChanges
+} from '../../context/UnsavedChangesContext'
 import { useTranslation } from '../../hooks/useTranslation'
 import { logger } from '../../utils/logger'
 import { createStyles } from './SettingsViewV2.styles'
@@ -104,11 +110,13 @@ const renderActiveContent = (
   }
 }
 
-export const SettingsViewV2 = () => {
+const SettingsViewV2Body = () => {
   const { t } = useTranslation()
   const { navigate, data } = useRouter()
   const { theme } = useTheme()
   const styles = createStyles(theme.colors)
+  const { getGuard } = useUnsavedChanges()
+  const { setModal, closeModal } = useModal()
 
   const sections: Section[] = useMemo(
     () => [
@@ -241,8 +249,44 @@ export const SettingsViewV2 = () => {
     }))
   }
 
+  const promptIfUnsaved = useCallback(
+    (proceed: () => void) => {
+      const guard = getGuard()
+      if (!guard?.hasUnsavedChanges) {
+        proceed()
+        return
+      }
+      setModal(
+        <UnsavedChangesModalContent
+          description={guard.description}
+          onSave={async () => {
+            const ok = await guard.save()
+            if (ok) {
+              closeModal()
+              proceed()
+            }
+          }}
+          onDiscard={() => {
+            closeModal()
+            proceed()
+          }}
+        />
+      )
+    },
+    [closeModal, getGuard, setModal]
+  )
+
   const onBack = () => {
-    navigate('vault', { recordType: 'all' })
+    promptIfUnsaved(() => {
+      navigate('vault', { recordType: 'all' })
+    })
+  }
+
+  const onSelectItem = (key: SettingsItemKey) => {
+    if (key === activeItemKey) return
+    promptIfUnsaved(() => {
+      setActiveItemKey(key)
+    })
   }
 
   return (
@@ -317,7 +361,7 @@ export const SettingsViewV2 = () => {
                                   color={theme.colors.colorTextSecondary}
                                 />
                               }
-                              onClick={() => setActiveItemKey(item.key)}
+                              onClick={() => onSelectItem(item.key)}
                             />
                           </div>
                         </div>
@@ -337,3 +381,9 @@ export const SettingsViewV2 = () => {
     </div>
   )
 }
+
+export const SettingsViewV2 = () => (
+  <UnsavedChangesProvider>
+    <SettingsViewV2Body />
+  </UnsavedChangesProvider>
+)
