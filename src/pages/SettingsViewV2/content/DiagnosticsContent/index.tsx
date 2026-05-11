@@ -3,7 +3,8 @@ import React, { useCallback, useEffect, useState } from 'react'
 import {
   Button,
   PageHeader,
-  ToggleSwitch
+  ToggleSwitch,
+  useTheme
 } from '@tetherto/pearpass-lib-ui-kit'
 import { FolderOpen } from '@tetherto/pearpass-lib-ui-kit/icons'
 
@@ -19,7 +20,8 @@ const TEST_IDS = {
 
 export const DiagnosticsContent = () => {
   const { t } = useTranslation()
-  const styles = createStyles()
+  const { theme } = useTheme()
+  const styles = createStyles(theme.colors)
 
   const [loggingEnabled, setLoggingEnabled] = useState(false)
   const [loggingForced, setLoggingForced] = useState(false)
@@ -72,7 +74,7 @@ export const DiagnosticsContent = () => {
           'Logs help us troubleshoot issues. Enable logging, reproduce the problem, then share the logs with us.'
         )}
       />
-      <div style={styles.card}>
+      <div style={styles.settingCard}>
         <ToggleSwitch
           data-testid={TEST_IDS.loggingToggle}
           checked={loggingEnabled}
@@ -89,20 +91,20 @@ export const DiagnosticsContent = () => {
               : t('Capture verbose logs to share with us.')
           }
         />
-        <div style={styles.actions}>
-          <Button
-            data-testid={TEST_IDS.openLogs}
-            variant="primary"
-            size="small"
-            disabled={!loggingEnabled}
-            onClick={() => {
-              void window.electronAPI?.openLogsFolder?.()
-            }}
-            iconBefore={<FolderOpen />}
-          >
-            {t('Open logs folder')}
-          </Button>
-        </div>
+      </div>
+      <div style={styles.openLogsRow}>
+        <Button
+          data-testid={TEST_IDS.openLogs}
+          variant="primary"
+          size="small"
+          disabled={!loggingEnabled}
+          onClick={() => {
+            void window.electronAPI?.openLogsFolder?.()
+          }}
+          iconBefore={<FolderOpen />}
+        >
+          {t('Open logs folder')}
+        </Button>
       </div>
     </div>
   )

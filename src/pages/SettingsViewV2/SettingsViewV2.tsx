@@ -24,6 +24,7 @@ import {
   SettingsApplicationsFilled,
   Sync,
   SystemSecurityUpdateFilled,
+  TerminalTone,
   Translate
 } from '@tetherto/pearpass-lib-ui-kit/icons'
 
@@ -201,7 +202,7 @@ const SettingsViewV2Body = () => {
           {
             key: SettingsItemKey.Diagnostics,
             label: t('Diagnostics'),
-            icon: BugReportFilled
+            icon: TerminalTone
           },
           {
             key: SettingsItemKey.AppVersion,

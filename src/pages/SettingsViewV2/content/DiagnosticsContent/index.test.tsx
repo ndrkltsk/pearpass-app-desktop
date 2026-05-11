@@ -18,8 +18,8 @@ jest.mock('../../../../utils/logger', () => ({
 jest.mock('./styles', () => ({
   createStyles: () => ({
     root: {},
-    card: {},
-    actions: {}
+    settingCard: {},
+    openLogsRow: {}
   })
 }))
 
@@ -28,6 +28,7 @@ jest.mock('@tetherto/pearpass-lib-ui-kit/icons', () => ({
 }))
 
 jest.mock('@tetherto/pearpass-lib-ui-kit', () => ({
+  useTheme: () => ({ theme: { colors: {} } }),
   PageHeader: ({ title, subtitle }: { title: string; subtitle?: string }) => (
     <div data-testid="settings-diagnostics-page-header">
       <h1>{title}</h1>
