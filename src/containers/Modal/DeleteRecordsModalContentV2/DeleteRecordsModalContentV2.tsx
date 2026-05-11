@@ -16,11 +16,13 @@ import type { VaultRecord } from '../../../utils/groupRecordsByTimePeriod'
 type DeleteRecordsModalContentV2Props = {
   records: VaultRecord[]
   onCompleted?: () => void
+  onConfirm?: () => Promise<void> | void
 }
 
 export const DeleteRecordsModalContentV2 = ({
   records,
-  onCompleted
+  onCompleted,
+  onConfirm
 }: DeleteRecordsModalContentV2Props) => {
   const { t } = useTranslation()
   const { theme } = useTheme()
@@ -53,7 +55,11 @@ export const DeleteRecordsModalContentV2 = ({
 
   const handleDelete = async () => {
     if (!count || isLoading) return
-    await deleteRecords(records.map((r) => r.id))
+    if (onConfirm) {
+      await onConfirm()
+    } else {
+      await deleteRecords(records.map((r) => r.id))
+    }
     onCompleted?.()
   }
 

@@ -8,7 +8,10 @@ export default defineConfig({
     {
       path: './src/locales/{locale}/messages',
       include: ['./src'],
-      exclude: ['./src/native-messaging-bridge/node_modules/**']
+      exclude: [
+        './src/native-messaging-bridge/node_modules/**',
+        './src/PearPass/**'
+      ]
     }
   ],
   format: formatter({ style: 'minimal' }),

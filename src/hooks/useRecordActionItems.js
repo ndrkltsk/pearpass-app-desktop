@@ -1,7 +1,7 @@
 import React from 'react'
 
 import { useLingui } from '@lingui/react'
-import { useRecords } from '@tetherto/pearpass-lib-vault'
+import { RECORD_TYPES, useRecords } from '@tetherto/pearpass-lib-vault'
 import { html } from 'htm/react'
 
 import { useCreateOrEditRecord } from './useCreateOrEditRecord'
@@ -11,6 +11,7 @@ import { MoveFolderModalContent } from '../containers/Modal/MoveFolderModalConte
 import { MoveFolderModalContentV2 } from '../containers/Modal/MoveFolderModalContentV2/MoveFolderModalContentV2'
 import { useModal } from '../context/ModalContext'
 import { useRouter } from '../context/RouterContext'
+import { useToast } from '../context/ToastContext'
 import { isV2 } from '../utils/designVersion'
 
 /**
@@ -32,15 +33,40 @@ import { isV2 } from '../utils/designVersion'
 export const useRecordActionItems = ({
   excludeTypes = [],
   record,
+  recordType,
   onSelect,
   onClose
 } = {}) => {
   const { i18n } = useLingui()
   const { setModal, closeModal } = useModal()
   const { data: routerData, navigate, currentPage } = useRouter()
+  const { setToast } = useToast()
 
-  const { deleteRecords, updateFavoriteState } = useRecords()
+  const { deleteRecords, updateRecords, updateFavoriteState } = useRecords()
   const { handleCreateOrEditRecord } = useCreateOrEditRecord()
+
+  const isOtpContext =
+    recordType === RECORD_TYPES.OTP ||
+    routerData?.recordType === RECORD_TYPES.OTP
+  const isAuthenticatorLoginRecord =
+    isOtpContext && record?.type === RECORD_TYPES.LOGIN
+
+  const handleStripOtp = async () => {
+    const { otpInput, otp, ...restData } = record?.data ?? {}
+    const { otpPublic, ...recordWithoutOtp } = record ?? {}
+    const updatedRecord = { ...recordWithoutOtp, data: restData }
+    try {
+      await updateRecords([updatedRecord])
+      if (routerData?.recordId === record?.id) {
+        navigate(currentPage, { ...routerData, recordId: undefined })
+      }
+      closeModal?.()
+    } catch (err) {
+      setToast({
+        message: err?.message ?? i18n._('Failed to remove authenticator code')
+      })
+    }
+  }
 
   const handleDeleteConfirm = () => {
     if (routerData?.recordId === record?.id) {
@@ -54,7 +80,12 @@ export const useRecordActionItems = ({
 
   const handleDelete = () => {
     if (isV2()) {
-      setModal(<DeleteRecordsModalContentV2 records={[record]} />)
+      setModal(
+        <DeleteRecordsModalContentV2
+          records={[record]}
+          onConfirm={isAuthenticatorLoginRecord ? handleStripOtp : undefined}
+        />
+      )
     } else {
       setModal(
         <ConfirmationModalContent
@@ -84,7 +115,7 @@ export const useRecordActionItems = ({
 
   const handleEdit = () => {
     handleCreateOrEditRecord({
-      recordType: record?.type,
+      recordType: isOtpContext ? RECORD_TYPES.OTP : record?.type,
       initialRecord: record
     })
 

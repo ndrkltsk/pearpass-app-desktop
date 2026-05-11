@@ -10,6 +10,7 @@ export function useRecordActionItems(params?: {
     string,
     unknown
   >
+  recordType?: 'login' | 'otp'
   onSelect?: () => void
   onClose?: () => void
 }): {

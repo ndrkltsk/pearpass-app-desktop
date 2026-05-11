@@ -17,7 +17,7 @@ import {
   TrashOutlined
 } from '@tetherto/pearpass-lib-ui-kit/icons'
 // @ts-expect-error - declaration file is incomplete
-import { useRecordById } from '@tetherto/pearpass-lib-vault'
+import { RECORD_TYPES, useRecordById } from '@tetherto/pearpass-lib-vault'
 
 import { RecordItemIcon } from '../../components/RecordItemIcon'
 import { useRouter } from '../../context/RouterContext'
@@ -79,6 +79,7 @@ export const RecordDetailsV2 = () => {
   const { actions } = useRecordActionItems({
     excludeTypes: ['select', 'pin'],
     record,
+    recordType: routerData?.recordType === RECORD_TYPES.OTP ? RECORD_TYPES.OTP : undefined,
     onClose: () => setIsMenuOpen(false)
   })
 

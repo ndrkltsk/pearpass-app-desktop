@@ -6,7 +6,8 @@ import {
   useFolders,
   useRecordCountsByType,
   useVault,
-  useVaults
+  useVaults,
+  RECORD_TYPES
 } from '@tetherto/pearpass-lib-vault'
 import {
   Button,
@@ -71,7 +72,7 @@ export const SidebarV2 = () => {
 
   const { categoriesItems } = useRecordMenuItemsV2()
 
-  const isAuthenticatorActive = routerData?.recordType === 'authenticator'
+  const isAuthenticatorActive = routerData?.recordType === RECORD_TYPES.OTP
   const activeCategory = isAuthenticatorActive
     ? null
     : (routerData?.recordType ?? null)
@@ -100,7 +101,7 @@ export const SidebarV2 = () => {
   const currentFolder = routerData?.folder
   // Folder selection doesn't apply in authenticator mode; fall back to "all"
   // so clicking a folder exits authenticator cleanly instead of landing on the
-  // nonsensical { recordType: 'authenticator', folder: X } state.
+  // nonsensical { recordType: RECORD_TYPES.OTP, folder: X } state.
   const folderClickRecordType = isAuthenticatorActive ? 'all' : currentRecordType
 
   const handleCategoryClick = (type: string) => {
@@ -398,22 +399,22 @@ export const SidebarV2 = () => {
             testID="sidebar-authenticator"
             label={t('Authenticator')}
             size="small"
-            selected={routerData?.recordType === 'authenticator'}
+            selected={routerData?.recordType === RECORD_TYPES.OTP}
             variant={
-              routerData?.recordType === 'authenticator'
+              routerData?.recordType === RECORD_TYPES.OTP
                 ? 'default'
                 : 'secondary'
             }
             icon={
               <TwoFactorAuthenticationOutlined
                 color={
-                  routerData?.recordType === 'authenticator'
+                  routerData?.recordType === RECORD_TYPES.OTP
                     ? theme.colors.colorTextPrimary
                     : theme.colors.colorTextSecondary
                 }
               />
             }
-            onClick={() => navigate('vault', { recordType: 'authenticator' })}
+            onClick={() => navigate('vault', { recordType: RECORD_TYPES.OTP })}
           />
         </div>
       )}

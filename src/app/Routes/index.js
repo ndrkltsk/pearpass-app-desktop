@@ -1,5 +1,5 @@
 import { AUTHENTICATOR_ENABLED } from '@tetherto/pearpass-lib-constants'
-import { OtpRefreshProvider } from '@tetherto/pearpass-lib-vault'
+import { OtpRefreshProvider, RECORD_TYPES } from '@tetherto/pearpass-lib-vault'
 import { html } from 'htm/react'
 
 import { LayoutWithSidebar } from '../../containers/LayoutWithSidebar'
@@ -66,7 +66,7 @@ export const Routes = ({
 
   if (currentPage === 'vault') {
     const isAuthenticator =
-      AUTHENTICATOR_ENABLED && data?.recordType === 'authenticator'
+      AUTHENTICATOR_ENABLED && data?.recordType === RECORD_TYPES.OTP
 
     const VersionBasedMainView = isV2() ? MainViewV2 : MainView
 

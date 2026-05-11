@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import { useLingui } from '@lingui/react'
 import { colors } from '@tetherto/pearpass-lib-ui-theme-provider'
 import {
   useRecords,
   isExpiring,
-  groupOtpRecords
+  groupOtpRecords,
+  RECORD_TYPES
 } from '@tetherto/pearpass-lib-vault'
 import { html } from 'htm/react'
 
@@ -21,14 +22,13 @@ import {
   GroupLabel,
   GroupLabelText,
   GroupTimeValue,
-  Header,
   ListWrapper,
   Title,
   Wrapper
 } from './styles'
-import { InputSearch } from '../../components/InputSearch'
 import { Record } from '../../components/Record'
 import { TimerCircle } from '../../components/TimerCircle'
+import { useAppHeaderContext } from '../../context/AppHeaderContext'
 import { useRouter } from '../../context/RouterContext'
 import { useCreateOrEditRecord } from '../../hooks/useCreateOrEditRecord'
 import {
@@ -41,7 +41,7 @@ export const AuthenticatorView = () => {
   const { i18n } = useLingui()
   const { navigate } = useRouter()
   const { handleCreateOrEditRecord } = useCreateOrEditRecord()
-  const [searchValue, setSearchValue] = useState('')
+  const { searchValue } = useAppHeaderContext()
 
   const { data: records } = useRecords({
     shouldSkip: true,
@@ -64,7 +64,7 @@ export const AuthenticatorView = () => {
     // Stay in authenticator view, just open the sidebar
     navigate('vault', {
       recordId: record.id,
-      recordType: 'authenticator'
+      recordType: RECORD_TYPES.OTP
     })
   }
 
@@ -75,15 +75,6 @@ export const AuthenticatorView = () => {
 
   return html`
     <${Wrapper}>
-      <${Header}>
-        <${InputSearch}
-          value=${searchValue}
-          onChange=${(e) => setSearchValue(e.target.value)}
-          quantity=${otpRecords.length}
-          testId="authenticator-search-input"
-        />
-      <//>
-
       ${otpRecords.length === 0
         ? html`
             <${EmptyState}>
@@ -100,7 +91,7 @@ export const AuthenticatorView = () => {
 
               <${EmptyStateCTAs}>
                 <${EmptyStatePrimaryButton}
-                  onClick=${() => handleCreateOrEditRecord({ recordType: 'login' })}
+                  onClick=${() => handleCreateOrEditRecord({ recordType: RECORD_TYPES.OTP })}
                 >
                   <${PlusIcon} size="16" color=${colors.grey500.mode1} />
                   ${i18n._('Add Code')}

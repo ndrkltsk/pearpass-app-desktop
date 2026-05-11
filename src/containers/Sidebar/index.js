@@ -6,7 +6,8 @@ import {
   closeAllInstances,
   useFolders,
   useVault,
-  useVaults
+  useVaults,
+  RECORD_TYPES
 } from '@tetherto/pearpass-lib-vault'
 import { html } from 'htm/react'
 
@@ -144,8 +145,8 @@ export const Sidebar = ({ sidebarSize = 'tight' }) => {
       return
     }
 
-    if (id === 'authenticator') {
-      navigate('vault', { recordType: 'authenticator' })
+    if (id === RECORD_TYPES.OTP) {
+      navigate('vault', { recordType: RECORD_TYPES.OTP })
       return
     }
 
@@ -201,10 +202,10 @@ export const Sidebar = ({ sidebarSize = 'tight' }) => {
                 <${SidebarFolder}
                   key="authenticator"
                   isOpen=${false}
-                  onClick=${() => handleFolderClick('authenticator')}
+                  onClick=${() => handleFolderClick(RECORD_TYPES.OTP)}
                   name=${t('Authenticator')}
                   icon=${LockIcon}
-                  isActive=${routerData?.recordType === 'authenticator'}
+                  isActive=${routerData?.recordType === RECORD_TYPES.OTP}
                   hasMenu=${false}
                 />
               <//>

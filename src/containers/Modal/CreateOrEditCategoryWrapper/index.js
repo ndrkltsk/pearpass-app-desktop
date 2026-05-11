@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { RECORD_TYPES } from '@tetherto/pearpass-lib-vault'
 import { html } from 'htm/react'
 
+import { CreateOrEditAuthenticatorModalContent } from './CreateOrEditAuthenticatorModalContent/CreateOrEditAuthenticatorModalContent'
 import { CreateOrEditCreditCardModalContent } from './CreateOrEditCreditCardModalContent'
 import { CreateOrEditCreditCardModalContentV2 } from './CreateOrEditCreditCardModalContentV2/CreateOrEditCreditCardModalContentV2'
 import { CreateOrEditCustomModalContent } from './CreateOrEditCustomModalContent'
@@ -26,6 +27,15 @@ export const CreateOrEditCategoryWrapper = ({
   isFavorite
 }) => {
   const [currentRecordType, setCurrentRecordType] = useState(recordType)
+
+  if (currentRecordType === RECORD_TYPES.OTP) {
+    return html`<${CreateOrEditAuthenticatorModalContent}
+      initialRecord=${initialRecord}
+      selectedFolder=${selectedFolder}
+      isFavorite=${isFavorite}
+      onTypeChange=${setCurrentRecordType}
+    />`
+  }
 
   if (currentRecordType === RECORD_TYPES.LOGIN) {
     if (isV2()) {
