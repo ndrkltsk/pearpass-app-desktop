@@ -11,6 +11,7 @@ import { MoveFolderModalContent } from '../containers/Modal/MoveFolderModalConte
 import { MoveFolderModalContentV2 } from '../containers/Modal/MoveFolderModalContentV2/MoveFolderModalContentV2'
 import { useModal } from '../context/ModalContext'
 import { useRouter } from '../context/RouterContext'
+import { useToast } from '../context/ToastContext'
 import { isV2 } from '../utils/designVersion'
 
 /**
@@ -39,6 +40,7 @@ export const useRecordActionItems = ({
   const { i18n } = useLingui()
   const { setModal, closeModal } = useModal()
   const { data: routerData, navigate, currentPage } = useRouter()
+  const { setToast } = useToast()
 
   const { deleteRecords, updateRecords, updateFavoriteState } = useRecords()
   const { handleCreateOrEditRecord } = useCreateOrEditRecord()
@@ -48,15 +50,22 @@ export const useRecordActionItems = ({
     routerData?.recordType === RECORD_TYPES.OTP
   const isAuthenticatorLoginRecord =
     isOtpContext && record?.type === RECORD_TYPES.LOGIN
-  const handleStripOtp = () => {
+
+  const handleStripOtp = async () => {
     const { otpInput, otp, ...restData } = record?.data ?? {}
     const { otpPublic, ...recordWithoutOtp } = record ?? {}
     const updatedRecord = { ...recordWithoutOtp, data: restData }
-    updateRecords([updatedRecord])
-    if (routerData?.recordId === record?.id) {
-      navigate(currentPage, { ...routerData, recordId: undefined })
+    try {
+      await updateRecords([updatedRecord])
+      if (routerData?.recordId === record?.id) {
+        navigate(currentPage, { ...routerData, recordId: undefined })
+      }
+      closeModal?.()
+    } catch (err) {
+      setToast({
+        message: err?.message ?? i18n._('Failed to remove authenticator code')
+      })
     }
-    closeModal?.()
   }
 
   const handleDeleteConfirm = () => {
@@ -106,7 +115,7 @@ export const useRecordActionItems = ({
 
   const handleEdit = () => {
     handleCreateOrEditRecord({
-      recordType: record?.type,
+      recordType: isOtpContext ? RECORD_TYPES.OTP : record?.type,
       initialRecord: record
     })
 

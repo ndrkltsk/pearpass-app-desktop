@@ -53,7 +53,7 @@ export type CreateOrEditAuthenticatorModalContentProps = {
 export const CreateOrEditAuthenticatorModalContent = ({
   initialRecord,
   selectedFolder,
-  isFavorite,
+  isFavorite
 }: CreateOrEditAuthenticatorModalContentProps) => {
   const { t } = useTranslation()
   const { closeModal, setModal } = useModal()
@@ -98,7 +98,10 @@ export const CreateOrEditAuthenticatorModalContent = ({
   const { register, handleSubmit, values, setValue } = useForm({
     initialValues: {
       title: initialRecord?.data?.title ?? '',
-      otpSecret: initialRecord?.data?.otpInput ?? (initialRecord?.data?.otp as { secret?: string } | undefined)?.secret ?? '',
+      otpSecret:
+        initialRecord?.data?.otpInput ??
+        (initialRecord?.data?.otp as { secret?: string } | undefined)?.secret ??
+        '',
       note: initialRecord?.data?.note ?? '',
       attachments: initialRecord?.attachments ?? []
     },

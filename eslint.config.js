@@ -1,6 +1,7 @@
 import { eslintConfig } from '@tetherto/tether-dev-docs'
 
 export default [
+  { ignores: ['src/PearPass/**'] },
   ...eslintConfig,
   {
     files: ['**/*.{js,jsx,mjs,cjs}'],

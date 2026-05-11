@@ -6,7 +6,7 @@ import { useRouter } from '../context/RouterContext'
 import { isV2 } from '../utils/designVersion'
 
 const mockDeleteRecord = jest.fn()
-const mockUpdateRecords = jest.fn()
+const mockUpdateRecords = jest.fn().mockResolvedValue(undefined)
 const mockUpdateFavoriteState = jest.fn()
 
 jest.mock(
@@ -35,6 +35,10 @@ jest.mock(
 
 jest.mock('../context/ModalContext', () => ({
   useModal: jest.fn()
+}))
+
+jest.mock('../context/ToastContext', () => ({
+  useToast: () => ({ setToast: jest.fn() })
 }))
 
 jest.mock('../context/RouterContext', () => ({
@@ -221,7 +225,7 @@ describe('useRecordActionItems', () => {
     expect(mockCloseModal).toHaveBeenCalled()
   })
 
-  test('strips OTP fields from login record when deleting in authenticator context', () => {
+  test('strips OTP fields from login record when deleting in authenticator context', async () => {
     const otpLoginRecord = {
       id: '123',
       type: 'login',
@@ -262,7 +266,7 @@ describe('useRecordActionItems', () => {
 
     const onConfirm = mockSetModal.mock.calls[0][0].props.onConfirm
     expect(onConfirm).toBeDefined()
-    onConfirm()
+    await onConfirm()
 
     expect(mockUpdateRecords).toHaveBeenCalledTimes(1)
     const updatedRecord = mockUpdateRecords.mock.calls[0][0][0]
