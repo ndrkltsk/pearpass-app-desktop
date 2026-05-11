@@ -144,18 +144,18 @@ describe('AppHeaderContainer', () => {
     expect(AppHeaderV2).not.toHaveBeenCalled()
   })
 
-  it('returns null on authenticator vault when AUTHENTICATOR_ENABLED', () => {
+  it('renders AppHeaderV2 on authenticator vault when AUTHENTICATOR_ENABLED', () => {
     mockAuthenticatorEnabled = true
     useRouter.mockReturnValue({
       currentPage: 'vault',
-      data: { recordType: 'authenticator' },
+      data: { recordType: 'otp' },
       navigate: mockNavigate
     })
 
-    const { container } = renderWithHeaderContext(<AppHeaderContainer />)
+    renderWithHeaderContext(<AppHeaderContainer />)
 
-    expect(container.firstChild).toBeNull()
-    expect(AppHeaderV2).not.toHaveBeenCalled()
+    expect(screen.getByTestId('app-header-v2-mock')).toBeInTheDocument()
+    expect(AppHeaderV2).toHaveBeenCalled()
   })
 
   it('renders AppHeaderV2 on vault when v2 and not blocked', () => {

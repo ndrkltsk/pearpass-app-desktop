@@ -1,3 +1,4 @@
+import React from 'react'
 import { AUTHENTICATOR_ENABLED } from '@tetherto/pearpass-lib-constants'
 import { ContextMenu, NavbarListItem, useTheme } from '@tetherto/pearpass-lib-ui-kit'
 import {
