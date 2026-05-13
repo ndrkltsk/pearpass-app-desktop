@@ -483,11 +483,9 @@ export const ImportItemsContent = () => {
                   <ListItem
                     key={option.title}
                     title={option.title}
-                    subtitle={
-                      t('Required Format:') +
-                      ' ' +
-                      option.accepts.join(', ').toUpperCase()
-                    }
+                    subtitle={t('Required Format: {format}', {
+                      format: option.accepts.join(', ').toUpperCase()
+                    })}
                     testID={option.testId}
                     rightElement={
                       <KeyboardArrowRightFilled

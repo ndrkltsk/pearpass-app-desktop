@@ -3,6 +3,7 @@ import { AppVersionContent } from './AppVersionContent'
 import { BlindPeersContent } from './BlindPeersContent'
 import { DiagnosticsContent } from './DiagnosticsContent'
 import { ExportItemsContent } from './ExportItemsContent'
+import { ImportCodesContent } from './ImportCodesContent'
 import { ImportItemsContent } from './ImportItemsContent'
 import { LanguageContent } from './LanguageContent'
 import { MasterPasswordContent } from './MasterPasswordContent'
@@ -15,6 +16,7 @@ export {
   BlindPeersContent,
   DiagnosticsContent,
   ExportItemsContent,
+  ImportCodesContent,
   ImportItemsContent,
   YourDevicesContent,
   LanguageContent,
