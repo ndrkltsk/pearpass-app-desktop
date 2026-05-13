@@ -13,7 +13,7 @@ type ImportCodesOption = {
   title: string
   description: string
   accepts: string[]
-  testId?: string
+  testID?: string
 }
 
 const importCodesOptions: ImportCodesOption[] = [
@@ -21,7 +21,7 @@ const importCodesOptions: ImportCodesOption[] = [
     title: 'Google Authenticator',
     description: 'PNG, JPG, JPEG',
     accepts: ['.png', '.jpg', '.jpeg'],
-    testId: 'settings-import-codes-google-authenticator'
+    testID: 'settings-import-codes-google-authenticator'
   }
 ]
 
@@ -58,7 +58,7 @@ export const ImportCodesContent = () => {
               <ListItem
                 title={option.title}
                 subtitle={t('Required Format:') + ' ' + option.description}
-                testID={option.testId}
+                testID={option.testID}
                 rightElement={
                   <KeyboardArrowRightFilled
                     width={16}
