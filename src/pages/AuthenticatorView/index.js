@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useLingui } from '@lingui/react'
+import { DESKTOP_2FA_IMPORTS_ENABLED } from '@tetherto/pearpass-lib-constants'
 import {
   Breadcrumb,
   Button,
@@ -367,25 +368,28 @@ export const AuthenticatorView = () => {
                         ${i18n._('Add Code')}
                       <//>
                     </div>
-                    <div style=${emptyStateStyles.ctaButton}>
-                      <${Button}
-                        variant="secondary"
-                        size="small"
-                        fullWidth
-                        data-testid="authenticator-empty-import-codes"
-                        iconBefore=${html`<${ImportExport}
-                          width=${16}
-                          height=${16}
-                          color=${iconColor}
-                        />`}
-                        onClick=${() =>
-                          navigate('settings', {
-                            initialTab: SettingsItemKey.ImportItems
-                          })}
-                      >
-                        ${i18n._('Import Codes')}
-                      <//>
-                    </div>
+                    ${DESKTOP_2FA_IMPORTS_ENABLED &&
+                    html`
+                      <div style=${emptyStateStyles.ctaButton}>
+                        <${Button}
+                          variant="secondary"
+                          size="small"
+                          fullWidth
+                          data-testid="authenticator-empty-import-codes"
+                          iconBefore=${html`<${ImportExport}
+                            width=${16}
+                            height=${16}
+                            color=${iconColor}
+                          />`}
+                          onClick=${() =>
+                            navigate('settings', {
+                              initialTab: SettingsItemKey.ImportItems
+                            })}
+                        >
+                          ${i18n._('Import Codes')}
+                        <//>
+                      </div>
+                    `}
                   </div>
                 </div>
               </div>

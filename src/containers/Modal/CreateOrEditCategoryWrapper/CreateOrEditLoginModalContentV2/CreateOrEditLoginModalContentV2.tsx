@@ -15,13 +15,14 @@ import {
   Text,
   useTheme,
 } from '@tetherto/pearpass-lib-ui-kit'
-import { RECORD_TYPES } from '@tetherto/pearpass-lib-vault'
+import { RECORD_TYPES, validateOtpInput } from '@tetherto/pearpass-lib-vault'
 import {
   useCreateRecord,
   useRecords
 } from '@tetherto/pearpass-lib-vault'
 import {
   Add,
+  Close,
   SyncLock,
   TrashOutlined,
   UploadFileFilled
@@ -111,7 +112,7 @@ export const CreateOrEditLoginModalContentV2 = ({
     title: Validator.string().required(t('Title is required')),
     username: Validator.string(),
     password: Validator.string(),
-    otpSecret: Validator.string(),
+    otpSecret: Validator.string().refine(validateOtpInput),
     note: Validator.string(),
     websites: Validator.array().items(
       Validator.object({
@@ -253,7 +254,11 @@ export const CreateOrEditLoginModalContentV2 = ({
             variant='primary'
             size='small'
             type='button'
-            disabled={isLoading || (!isEdit && !values.title?.trim())}
+            disabled={
+              isLoading ||
+              (!isEdit && !values.title?.trim()) ||
+              !!otpSecretField.error
+            }
             isLoading={isLoading}
             onClick={() => handleSubmit(onSubmit)()}
             data-testid='createoredit-button-save-v2'
@@ -316,25 +321,48 @@ export const CreateOrEditLoginModalContentV2 = ({
             value={usernameField.value}
             onChange={(e) => usernameField.onChange(e.target.value)}
             error={usernameField.error || undefined}
+            isGrouped
             testID='createoredit-input-username-v2'
           />
           <PasswordFieldStrengthIndicator
             passwordField={passwordField}
             passwordType={passwordType}
             setPasswordType={setPasswordType}
+            isGrouped
             testID='createoredit-input-password-v2'
           />
         </MultiSlotInput>
 
         {AUTHENTICATOR_ENABLED ? (
-          <MultiSlotInput testID='createoredit-authenticator-slot-v2'>
+          <MultiSlotInput
+            testID='createoredit-authenticator-slot-v2'
+            errorMessage={otpSecretField.error || undefined}
+          >
             <PasswordField
               label={t('Authenticator Secret Key')}
               placeholder={t('Enter your key or URI')}
               value={otpSecretField.value}
               onChange={(e) => otpSecretField.onChange(e.target.value)}
-              error={otpSecretField.error || undefined}
               testID='createoredit-input-otpsecret-v2'
+              rightSlot={
+                isEdit && otpSecretField.value ? (
+                  <Button
+                    variant='tertiary'
+                    size='small'
+                    type='button'
+                    aria-label={t('Remove Authenticator Code')}
+                    iconBefore={
+                      <Close
+                        width={16}
+                        height={16}
+                        color={theme.colors.colorTextPrimary}
+                      />
+                    }
+                    onClick={() => setValue('otpSecret', '')}
+                    data-testid='createoredit-button-deleteotp-v2'
+                  />
+                ) : undefined
+              }
             />
           </MultiSlotInput>
         ) : null}

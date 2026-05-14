@@ -109,6 +109,31 @@ declare module '@tetherto/pearpass-lib-vault' {
   export function isExpiring(timeRemaining: number | null): boolean
   export const EXPIRY_THRESHOLD_SECONDS: number
 
+  export function validateOtpInput(
+    input: string | undefined | null
+  ): string | null
+
+  export function parseOtpInput(input: string | undefined | null): {
+    secret: string
+    type: 'TOTP' | 'HOTP'
+    algorithm: string
+    digits: number
+    period?: number
+    counter?: number
+    issuer?: string
+    label?: string
+  } | null
+
+  export function matchLoginRecords<
+    R extends { id: string; data?: Record<string, unknown> }
+  >(
+    parsedOtp: { issuer?: string; label?: string } | null | undefined,
+    loginRecords: R[]
+  ): Array<{
+    record: R
+    reasons: Array<'issuer-domain' | 'label-username'>
+  }>
+
   const otherExports: any
   export default otherExports
 

@@ -23,6 +23,7 @@ interface IPasswordFieldStrengthIndicatorProps {
   testID: string
   passwordType: PassType
   setPasswordType: React.Dispatch<React.SetStateAction<PassType>>
+  isGrouped?: boolean
 }
 
 export const PasswordFieldStrengthIndicator = ({
@@ -31,7 +32,8 @@ export const PasswordFieldStrengthIndicator = ({
   passwordType,
   setPasswordType,
   passwordField,
-  testID
+  testID,
+  isGrouped
 }: IPasswordFieldStrengthIndicatorProps) => {
   const { t } = useTranslation()
   const passwordStrength = useMemo(() => {
@@ -55,6 +57,7 @@ export const PasswordFieldStrengthIndicator = ({
       error={passwordField.error || undefined}
       testID={testID}
       passwordIndicator={passwordIndicator}
+      isGrouped={isGrouped}
     />
   )
 }

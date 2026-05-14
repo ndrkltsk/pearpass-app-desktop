@@ -84,10 +84,6 @@ export const RecordDetailsV2 = () => {
   const { actions } = useRecordActionItems({
     excludeTypes: ['select', 'pin'],
     record,
-    recordType:
-      routerData?.recordType === RECORD_TYPES.OTP
-        ? RECORD_TYPES.OTP
-        : undefined,
     onClose: () => setIsMenuOpen(false)
   })
 

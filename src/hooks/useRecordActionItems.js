@@ -33,7 +33,6 @@ import { isV2 } from '../utils/designVersion'
 export const useRecordActionItems = ({
   excludeTypes = [],
   record,
-  recordType,
   onSelect,
   onClose
 } = {}) => {
@@ -45,9 +44,7 @@ export const useRecordActionItems = ({
   const { deleteRecords, updateRecords, updateFavoriteState } = useRecords()
   const { handleCreateOrEditRecord } = useCreateOrEditRecord()
 
-  const isOtpContext =
-    recordType === RECORD_TYPES.OTP ||
-    routerData?.recordType === RECORD_TYPES.OTP
+  const isOtpContext = routerData?.recordType === RECORD_TYPES.OTP
   const isAuthenticatorLoginRecord =
     isOtpContext && record?.type === RECORD_TYPES.LOGIN
 

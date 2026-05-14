@@ -1,63 +1,43 @@
-import React from 'react'
+import React, { useMemo, useState } from 'react'
 
 import { useForm } from '@tetherto/pear-apps-lib-ui-react-hooks'
 import { Validator } from '@tetherto/pear-apps-utils-validator'
 import {
-  AttachmentField as UiKitAttachmentField,
   Button,
+  Combobox,
   Dialog,
   Form,
   InputField,
   MultiSlotInput,
-  PasswordField,
-  Text,
-  useTheme
+  PasswordField
 } from '@tetherto/pearpass-lib-ui-kit'
-import { RECORD_TYPES } from '@tetherto/pearpass-lib-vault'
-import { useCreateRecord, useRecords } from '@tetherto/pearpass-lib-vault'
 import {
-  Add,
-  TrashOutlined,
-  UploadFileFilled
-} from '@tetherto/pearpass-lib-ui-kit/icons'
-import { html } from 'htm/react'
+  RECORD_TYPES,
+  matchLoginRecords,
+  parseOtpInput,
+  useCreateRecord,
+  useRecords,
+  validateOtpInput
+} from '@tetherto/pearpass-lib-vault'
 import { createStyles } from './CreateOrEditAuthenticatorModalContent.styles'
-import { ATTACHMENTS_FIELD_KEY } from '../../../../constants/formFields'
 import { useGlobalLoading } from '../../../../context/LoadingContext'
 import { useModal } from '../../../../context/ModalContext'
 import { useToast } from '../../../../context/ToastContext'
 import { useTranslation } from '../../../../hooks/useTranslation'
-import { useGetMultipleFiles } from '../../../../hooks/useGetMultipleFiles'
-import { getFilteredAttachmentsById } from '../../../../utils/getFilteredAttachmentsById'
-import { handleFileSelect } from '../../../../utils/handleFileSelect'
-import { UploadFilesModalContentV2 } from '../../UploadFilesModalContentV2'
+import { RecordItemIcon } from '../../../../components/RecordItemIcon/RecordItemIcon'
 
 export type CreateOrEditAuthenticatorModalContentProps = {
-  initialRecord?: {
-    data: {
-      title: string
-      note: string
-      attachments: { id: string; name: string }[]
-      [key: string]: unknown
-    }
-    folder?: string
-    isFavorite?: boolean
-    attachments?: { id: string; name: string }[]
-    [key: string]: unknown
-  }
   selectedFolder?: string
   isFavorite?: boolean
   onTypeChange?: (type: string) => void
 }
 
 export const CreateOrEditAuthenticatorModalContent = ({
-  initialRecord,
   selectedFolder,
   isFavorite
 }: CreateOrEditAuthenticatorModalContentProps) => {
   const { t } = useTranslation()
-  const { closeModal, setModal } = useModal()
-  const { theme } = useTheme()
+  const { closeModal } = useModal()
   const styles = createStyles()
   const { setToast } = useToast()
 
@@ -75,6 +55,10 @@ export const CreateOrEditAuthenticatorModalContent = ({
     }
   })
 
+  const { data: loginRecords } = useRecords({
+    variables: { filters: { type: RECORD_TYPES.LOGIN } }
+  }) as { data?: Array<{ id: string; data?: Record<string, unknown> }> }
+
   const onError = (error: { message: string }) => {
     setToast({ message: error.message })
   }
@@ -83,89 +67,103 @@ export const CreateOrEditAuthenticatorModalContent = ({
 
   useGlobalLoading({ isLoading })
 
-  const schema = Validator.object({
-    title: Validator.string().required(t('Title is required')),
-    otpSecret: Validator.string(),
-    note: Validator.string(),
-    attachments: Validator.array().items(
+  const schema = useMemo(
+    () =>
       Validator.object({
-        id: Validator.string(),
-        name: Validator.string().required()
-      })
-    )
-  })
+        title: Validator.string().required(t('Title is required')),
+        otpSecret: Validator.string().refine(validateOtpInput)
+      }),
+    [t]
+  )
 
   const { register, handleSubmit, values, setValue } = useForm({
     initialValues: {
-      title: initialRecord?.data?.title ?? '',
-      otpSecret:
-        initialRecord?.data?.otpInput ??
-        (initialRecord?.data?.otp as { secret?: string } | undefined)?.secret ??
-        '',
-      note: initialRecord?.data?.note ?? '',
-      attachments: initialRecord?.attachments ?? []
+      title: '',
+      otpSecret: '',
+      linkedRecordId: ''
     },
     validate: (formValues: Record<string, unknown>) =>
       schema.validate(formValues)
   })
 
-  useGetMultipleFiles({
-    fieldNames: [ATTACHMENTS_FIELD_KEY],
-    updateValues: setValue,
-    initialRecord
-  })
+  const parsedOtp = useMemo(
+    () => parseOtpInput(values.otpSecret),
+    [values.otpSecret]
+  )
+
+  const matchedRecords = useMemo(
+    () => matchLoginRecords(parsedOtp, loginRecords ?? []),
+    [parsedOtp, loginRecords]
+  )
+
+  const linkedRecord = useMemo(
+    () =>
+      values.linkedRecordId
+        ? (loginRecords ?? []).find((r) => r.id === values.linkedRecordId)
+        : undefined,
+    [values.linkedRecordId, loginRecords]
+  )
+
+  const parsedEmail =
+    typeof parsedOtp?.label === 'string' ? parsedOtp.label : ''
 
   const onSubmit = (formValues: Record<string, unknown>) => {
     const otpInput = (formValues.otpSecret as string)?.trim() || undefined
+    const selectedLinkedRecord = formValues.linkedRecordId
+      ? (loginRecords ?? []).find((r) => r.id === formValues.linkedRecordId)
+      : undefined
 
-    const data = {
-      type: RECORD_TYPES.LOGIN,
-      folder: selectedFolder ?? initialRecord?.folder,
-      isFavorite: initialRecord?.isFavorite ?? isFavorite,
-      data: {
-        ...(initialRecord?.data ? initialRecord.data : {}),
-        title: formValues.title,
-        note: formValues.note,
-        attachments: formValues.attachments,
-        otpInput
-      }
+    if (selectedLinkedRecord) {
+      updateRecords(
+        [
+          {
+            ...selectedLinkedRecord,
+            data: {
+              ...(selectedLinkedRecord.data ?? {}),
+              otpInput
+            }
+          }
+        ],
+        onError
+      )
+      return
     }
 
-    if (initialRecord) {
-      updateRecords([{ ...initialRecord, ...data }], onError)
-    } else {
-      createRecord(data, onError)
-    }
-  }
-
-  const handleFileLoad = () => {
-    setModal(
-      html`<${UploadFilesModalContentV2}
-        type=${'file'}
-        onFilesSelected=${(files: File[]) =>
-          handleFileSelect({
-            files: files as unknown as FileList,
-            fieldName: ATTACHMENTS_FIELD_KEY,
-            setValue,
-            values
-          })}
-      />`
+    createRecord(
+      {
+        type: RECORD_TYPES.LOGIN,
+        folder: selectedFolder,
+        isFavorite,
+        data: {
+          title: formValues.title,
+          otpInput,
+          ...(parsedEmail ? { username: parsedEmail } : {})
+        }
+      },
+      onError
     )
   }
 
-  const isEdit = !!initialRecord
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const dropdownRecords = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (q) {
+      return (loginRecords ?? []).filter((r) => {
+        const title = ((r.data?.title as string) ?? '').toLowerCase()
+        const username = ((r.data?.username as string) ?? '').toLowerCase()
+        return title.includes(q) || username.includes(q)
+      })
+    }
+    return matchedRecords.map(({ record }) => record)
+  }, [searchQuery, loginRecords, matchedRecords])
 
   const titleField = register('title')
   const otpSecretField = register('otpSecret')
-  const noteField = register('note')
 
   return (
     <Dialog
-      title={
-        isEdit
-          ? t('Edit Authenticator Code Item')
-          : t('New Authenticator Code Item')
-      }
+      title={t('New Authenticator Code Item')}
       onClose={closeModal}
       testID='createoredit-authenticator-dialog'
       closeButtonTestID='createoredit-authenticator-close'
@@ -184,12 +182,16 @@ export const CreateOrEditAuthenticatorModalContent = ({
             variant='primary'
             size='small'
             type='button'
-            disabled={isLoading || (!isEdit && !values.title?.trim())}
+            disabled={
+              isLoading ||
+              (!linkedRecord && !values.title?.trim()) ||
+              !!otpSecretField.error
+            }
             isLoading={isLoading}
             onClick={() => handleSubmit(onSubmit)()}
             data-testid='createoredit-authenticator-button-save'
           >
-            {isEdit ? t('Save') : t('Add Item')}
+            {t('Add Item')}
           </Button>
         </>
       }
@@ -202,111 +204,63 @@ export const CreateOrEditAuthenticatorModalContent = ({
         <InputField
           label={t('Title')}
           placeholder={t('Enter Title')}
-          value={titleField.value}
+          value={
+            linkedRecord
+              ? ((linkedRecord.data?.title as string) ?? '')
+              : titleField.value
+          }
           onChange={(e) => titleField.onChange(e.target.value)}
           error={titleField.error || undefined}
+          disabled={!!linkedRecord}
           testID='createoredit-authenticator-input-title'
         />
 
-        <MultiSlotInput testID='createoredit-authenticator-otp-slot'>
-          <PasswordField
-            label={t('Authenticator Secret Key')}
-            placeholder={t('Enter your key or URI')}
-            value={otpSecretField.value}
-            onChange={(e) => otpSecretField.onChange(e.target.value)}
-            error={otpSecretField.error || undefined}
-            testID='createoredit-authenticator-input-otpsecret'
-          />
-        </MultiSlotInput>
 
-        <div style={styles.sectionLabel}>
-          <Text variant='caption' color={theme.colors.colorTextSecondary}>
-            {t('Additional')}
-          </Text>
-        </div>
+        <PasswordField
+          label={t('Authenticator Secret Key')}
+          placeholder={t('Enter your key or URI')}
+          value={otpSecretField.value}
+          error={otpSecretField.error || undefined}
+          onChange={(e) => otpSecretField.onChange(e.target.value)}
+          testID='createoredit-authenticator-input-otpsecret'
+        />
 
-        <MultiSlotInput testID='createoredit-authenticator-comment-slot'>
-          <InputField
-            label={t('Comment')}
-            placeholder={t('Enter Comment')}
-            value={noteField.value}
-            onChange={(e) => noteField.onChange(e.target.value)}
-            error={noteField.error || undefined}
-            testID='createoredit-authenticator-input-comment'
-          />
-        </MultiSlotInput>
-
-        <MultiSlotInput
-          testID='createoredit-authenticator-attachments-slot'
-          actions={
-            <Button
-              variant='tertiaryAccent'
-              size='small'
-              type='button'
-              iconBefore={<Add width={16} height={16} />}
-              onClick={handleFileLoad}
-              data-testid='createoredit-authenticator-button-addattachment'
-            >
-              {t('Add Another Attachment')}
-            </Button>
-          }
-        >
-          {values.attachments.length > 0
-            ? values.attachments.map(
-                (
-                  attachment: {
-                    id?: string
-                    tempId?: string
-                    name: string
-                  },
-                  index: number
-                ) => (
-                  <UiKitAttachmentField
-                    key={attachment.id || attachment.tempId}
-                    label={t('Attachment')}
-                    value={attachment.name}
-                    testID={`createoredit-authenticator-attachment-${index}`}
-                    rightSlot={
-                      <Button
-                        variant='tertiary'
-                        size='small'
-                        type='button'
-                        aria-label={t('Delete File')}
-                        iconBefore={
-                          <TrashOutlined
-                            width={16}
-                            height={16}
-                            color={theme.colors.colorTextPrimary}
-                          />
-                        }
-                        onClick={() =>
-                          setValue(
-                            ATTACHMENTS_FIELD_KEY,
-                            getFilteredAttachmentsById(
-                              values.attachments,
-                              attachment
-                            )
-                          )
-                        }
-                        data-testid={`createoredit-authenticator-button-deleteattachment-${index}`}
-                      />
-                    }
-                  />
-                )
+        <MultiSlotInput testID='createoredit-authenticator-link-slot'>
+          <Combobox
+            label={t('Link to Existing Login')}
+            title={t('Change Login Match')}
+            value={(linkedRecord?.data?.title as string) ?? ''}
+            placeholder={t('No record linked')}
+            onClear={() => setValue('linkedRecordId', '')}
+            onOpenChange={(open) => {
+              if (!open) setSearchQuery('')
+            }}
+            items={dropdownRecords.map((record) => ({
+              id: record.id,
+              title: (record.data?.title as string) ?? t('Untitled'),
+              subtitle: record.data?.username as string | undefined,
+              icon: (
+                <RecordItemIcon
+                  record={{ ...record, type: RECORD_TYPES.LOGIN }}
+                  size={32}
+                />
               )
-            : null}
-          <UiKitAttachmentField
-            label={t('Attachment')}
-            placeholder={t('Add or Drop File / Photos')}
-            onClick={handleFileLoad}
-            testID='createoredit-authenticator-attachment-upload'
-            rightSlot={
-              <UploadFileFilled
-                width={16}
-                height={16}
-                color={theme.colors.colorTextPrimary}
-              />
+            }))}
+            selectedId={values.linkedRecordId}
+            onSelect={(id) => {
+              setValue('linkedRecordId', id)
+              const rec = (loginRecords ?? []).find((r) => r.id === id)
+              setValue('title', (rec?.data?.title as string) ?? '')
+            }}
+            searchValue={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder={t('Search...')}
+            emptyText={
+              searchQuery.trim()
+                ? t('No login items found')
+                : t('No matching login items')
             }
+            testID='createoredit-authenticator-link-combobox'
           />
         </MultiSlotInput>
       </Form>

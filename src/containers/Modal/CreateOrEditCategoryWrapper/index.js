@@ -29,6 +29,15 @@ export const CreateOrEditCategoryWrapper = ({
   const [currentRecordType, setCurrentRecordType] = useState(recordType)
 
   if (currentRecordType === RECORD_TYPES.OTP) {
+    if (initialRecord) {
+      return html`<${CreateOrEditLoginModalContentV2}
+        initialRecord=${initialRecord}
+        selectedFolder=${selectedFolder}
+        isFavorite=${isFavorite}
+        onTypeChange=${setCurrentRecordType}
+      />`
+    }
+
     return html`<${CreateOrEditAuthenticatorModalContent}
       initialRecord=${initialRecord}
       selectedFolder=${selectedFolder}
