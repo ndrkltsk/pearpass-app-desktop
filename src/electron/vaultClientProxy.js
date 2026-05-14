@@ -113,7 +113,9 @@ const VAULT_METHODS = [
   'addOtpToRecord',
   'removeOtpFromRecord',
   'fetchFavicon',
-  'decryptExportData'
+  'decryptExportData',
+  'activeVaultFind',
+  'activeVaultGetWriterKey'
 ]
 
 /**
