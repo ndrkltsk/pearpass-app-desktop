@@ -57,6 +57,8 @@ function fromSerializableData(data) {
   return data
 }
 
+// `removeVault` deletes a whole vault (disk wipe + master entry).
+// `vaultsRemove` deletes a single key from the master vault. Distinct.
 const VAULT_METHODS = [
   'setStoragePath',
   'vaultsInit',

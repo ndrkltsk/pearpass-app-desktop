@@ -51,7 +51,7 @@ declare module '@tetherto/pearpass-lib-vault' {
       }
     ) => Promise<Vault | void>
     isVaultProtected: (vaultId: string | undefined) => Promise<boolean>
-    addDevice: (deviceName?: string) => Promise<void>
+    addDevice: () => Promise<void>
     resetState: () => void
     updateUnprotectedVault: (
       vaultId: string,
@@ -65,6 +65,7 @@ declare module '@tetherto/pearpass-lib-vault' {
   }
 
   export const setPearpassVaultClient: any
+  export function setCurrentDeviceName(name: string | null): void
   export const VaultProvider: any
   export function useVaults(options?: {
     onCompleted?: (payload: Vault[]) => void
