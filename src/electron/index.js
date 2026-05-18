@@ -51,3 +51,15 @@ export const electronRuntime =
 export function isElectron() {
   return typeof window !== 'undefined' && !!window.electronAPI
 }
+
+// Recovers from a partial master-password creation on a previous launch (see
+// the matching IPC handler in electron/main.cjs). Call before createMasterPassword.
+export async function clearStaleVaultsDir() {
+  if (
+    typeof window !== 'undefined' &&
+    window.electronAPI &&
+    typeof window.electronAPI.clearStaleVaultsDir === 'function'
+  ) {
+    await window.electronAPI.clearStaleVaultsDir()
+  }
+}

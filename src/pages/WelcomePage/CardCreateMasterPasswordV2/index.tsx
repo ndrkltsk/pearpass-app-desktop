@@ -34,6 +34,7 @@ import { createStyles } from './styles'
 import { LOCAL_STORAGE_KEYS } from '../../../constants/localStorage'
 import { useGlobalLoading } from '../../../context/LoadingContext'
 import { useRouter } from '../../../context/RouterContext'
+import { clearStaleVaultsDir } from '../../../electron'
 import { useTranslation } from '../../../hooks/useTranslation'
 import { logger } from '../../../utils/logger'
 import { STRENGTH_MAP } from '../../../constants/password'
@@ -116,6 +117,7 @@ export const CardCreateMasterPasswordV2 = () => {
     try {
       setIsLoading(true)
       localStorage.setItem(LOCAL_STORAGE_KEYS.TOU_ACCEPTED, 'true')
+      await clearStaleVaultsDir()
       await createMasterPassword(createBuffer)
       await logIn({ password: loginBuffer })
       await initVaults({ password: loginBuffer })

@@ -61,6 +61,15 @@ describe('preload.cjs', () => {
     expect(typeof window.electronAPI.clearClipboardAfter).toBe('function')
     expect(typeof window.electronAPI.vaultInvoke).toBe('function')
     expect(typeof window.electronAPI.vaultOnUpdate).toBe('function')
+    expect(typeof window.electronAPI.clearStaleVaultsDir).toBe('function')
+  })
+
+  it('routes clearStaleVaultsDir through ipcRenderer.invoke', async () => {
+    const { ipcRenderer } = require('electron')
+
+    await window.electronAPI.clearStaleVaultsDir()
+
+    expect(ipcRenderer.invoke).toHaveBeenCalledWith('vault:clearStaleVaultsDir')
   })
 
   it('routes simple invoke-based APIs through ipcRenderer.invoke', async () => {

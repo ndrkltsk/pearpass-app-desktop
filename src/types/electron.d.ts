@@ -21,6 +21,7 @@ declare global {
       vaultOnPersonalSwarmEnvelope: (
         cb: (payload: { envelope: string }) => void
       ) => () => void
+      clearStaleVaultsDir: () => Promise<void>
       openExternal: (url: string) => Promise<void>
       openLogsFolder: () => Promise<void>
       isLoggingEnabled: () => Promise<{ enabled: boolean; forced: boolean }>

@@ -58,6 +58,7 @@ window.electronAPI = {
     return () =>
       ipcRenderer.removeListener('vault:personal-swarm-envelope', sub)
   },
+  clearStaleVaultsDir: () => ipcRenderer.invoke('vault:clearStaleVaultsDir'),
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
   openLogsFolder: () => ipcRenderer.invoke('vault:openLogsFolder'),
   isLoggingEnabled: () => ipcRenderer.invoke('vault:isLoggingEnabled'),

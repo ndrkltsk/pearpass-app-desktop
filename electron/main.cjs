@@ -19,6 +19,8 @@ const PearRuntime = require('pear-runtime')
 const getPearRuntimeLegacyStorage = require('pear-runtime-legacy-storage')
 const { isLinux, isWindows, isMac } = require('which-runtime')
 
+const { clearStaleVaultsDir } = require('./clearStaleVaultsDir.cjs')
+// eslint-disable-next-line import/order
 const { scheduleClipboardCleanup } = require('./clipboardCleanup.cjs')
 
 let debugMode = false
@@ -692,6 +694,11 @@ function registerIPC() {
       delayMs
     })
   )
+
+  ipcMain.handle('vault:clearStaleVaultsDir', async () => {
+    const storagePath = await resolveRuntimeStorageDir()
+    await clearStaleVaultsDir({ storagePath, logger })
+  })
 
   ipcMain.handle('vault:openLogsFolder', async () => {
     const { logsDir, mainPath } = getLogPaths(getStorageDir())
