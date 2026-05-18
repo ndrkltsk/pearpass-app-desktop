@@ -57,6 +57,8 @@ function fromSerializableData(data) {
   return data
 }
 
+// `removeVault` deletes a whole vault (disk wipe + master entry).
+// `vaultsRemove` deletes a single key from the master vault. Distinct.
 const VAULT_METHODS = [
   'setStoragePath',
   'vaultsInit',
@@ -64,6 +66,7 @@ const VAULT_METHODS = [
   'vaultsGet',
   'vaultsClose',
   'vaultsAdd',
+  'removeVault',
   'activeVaultGetFile',
   'activeVaultRemoveFile',
   'vaultsList',
@@ -113,13 +116,23 @@ const VAULT_METHODS = [
   'removeOtpFromRecord',
   'fetchFavicon',
   'decryptExportData',
-  'decryptBitwardenExport'
+  'decryptBitwardenExport',
+  'activeVaultFind',
+  'activeVaultGetWriterKey',
+  'personalSwarmInit',
+  'personalSwarmClose',
+  'personalSwarmGetTopic',
+  'personalSwarmSend',
+  'vaultsRemove',
+  'vaultsFind',
+  'signMessage',
+  'verifySignature'
 ]
 
 /**
  * Creates a proxy that implements the vault client interface over IPC.
  * Extends EventEmitter so removeAllListeners, removeListener, on, once, etc. are always available.
- * @param {{ vaultInvoke: (method: string, args: any[]) => Promise<{ok: boolean, data?: any, error?: string}>, vaultOnUpdate: (cb: () => void) => () => void }} api
+ * @param {{ vaultInvoke: (method: string, args: any[]) => Promise<{ok: boolean, data?: any, error?: string}>, vaultOnUpdate: (cb: () => void) => () => void, vaultOnMasterUpdate?: (cb: () => void) => () => void }} api
  * @returns {import('@tetherto/pearpass-lib-vault-core').PearpassVaultClient}
  */
 export function createElectronVaultClientProxy(api) {
@@ -127,6 +140,10 @@ export function createElectronVaultClientProxy(api) {
     constructor() {
       super()
       api.vaultOnUpdate(() => this.emit('update'))
+      api.vaultOnMasterUpdate?.(() => this.emit('master-update'))
+      api.vaultOnPersonalSwarmEnvelope?.((msg) =>
+        this.emit('personal-swarm-envelope', fromSerializableData(msg))
+      )
       for (const method of VAULT_METHODS) {
         this[method] = async (...args) => {
           const serialized = args.map(toSerializableArg)

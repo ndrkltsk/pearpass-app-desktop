@@ -47,6 +47,17 @@ window.electronAPI = {
     ipcRenderer.on('vault:update', sub)
     return () => ipcRenderer.removeListener('vault:update', sub)
   },
+  vaultOnMasterUpdate: (cb) => {
+    const sub = () => cb()
+    ipcRenderer.on('vault:master-update', sub)
+    return () => ipcRenderer.removeListener('vault:master-update', sub)
+  },
+  vaultOnPersonalSwarmEnvelope: (cb) => {
+    const sub = (_event, msg) => cb(msg)
+    ipcRenderer.on('vault:personal-swarm-envelope', sub)
+    return () =>
+      ipcRenderer.removeListener('vault:personal-swarm-envelope', sub)
+  },
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
   openLogsFolder: () => ipcRenderer.invoke('vault:openLogsFolder'),
   isLoggingEnabled: () => ipcRenderer.invoke('vault:isLoggingEnabled'),

@@ -45,6 +45,8 @@ export class NativeMessagingIPCServer {
     this.secureMethodRegistry = new MethodRegistry(ipcActivityWrapper)
     /** @type {Map<string, number>} */
     this.clientRequestCounts = new Map()
+    /** @type {((payload: unknown) => void) | null} */
+    this.vaultAccessRevokedListener = null
 
     // Initialize handlers
     this.setupHandlers()
@@ -226,6 +228,10 @@ export class NativeMessagingIPCServer {
       vaultHandlers.vaultsAdd.bind(vaultHandlers)
     )
     this.secureMethodRegistry.register(
+      'removeVault',
+      vaultHandlers.removeVault.bind(vaultHandlers)
+    )
+    this.secureMethodRegistry.register(
       'vaultsClose',
       vaultHandlers.vaultsClose.bind(vaultHandlers)
     )
@@ -268,6 +274,11 @@ export class NativeMessagingIPCServer {
     this.secureMethodRegistry.register(
       'activeVaultDeleteInvite',
       vaultHandlers.activeVaultDeleteInvite.bind(vaultHandlers)
+    )
+    this.secureMethodRegistry.register(
+      'activeVaultGetWriterKey',
+      vaultHandlers.activeVaultGetWriterKey.bind(vaultHandlers),
+      { requiresStatus: ['encryption', 'vaults', 'activeVault'] }
     )
     this.secureMethodRegistry.register(
       'pairActiveVault',
@@ -388,6 +399,8 @@ export class NativeMessagingIPCServer {
       // Start listening
       await this.server.ready()
 
+      this.attachEventForwarders()
+
       this.isRunning = true
       logger.info(
         'IPC-SERVER',
@@ -400,6 +413,36 @@ export class NativeMessagingIPCServer {
   }
 
   /**
+   * Forward selected pearpassClient events to every connected IPC client via
+   * send-typed pear-ipc methods. Receivers (the bridge) translate these into
+   * native-messaging push events for the extension.
+   */
+  attachEventForwarders() {
+    if (!this.client?.on || this.vaultAccessRevokedListener) return
+
+    this.vaultAccessRevokedListener = (payload) => {
+      if (!this.server) return
+      for (const client of this.server.clients) {
+        try {
+          client.onVaultAccessRevoked?.(payload ?? {})
+        } catch (err) {
+          logger.error(
+            'IPC-SERVER',
+            `Failed to push vault-access-revoked to client ${client.id}: ${err.message}`
+          )
+        }
+      }
+    }
+    this.client.on('vault-access-revoked', this.vaultAccessRevokedListener)
+  }
+
+  detachEventForwarders() {
+    if (!this.client?.off || !this.vaultAccessRevokedListener) return
+    this.client.off('vault-access-revoked', this.vaultAccessRevokedListener)
+    this.vaultAccessRevokedListener = null
+  }
+
+  /**
    * @returns {Promise<void>}
    */
   async stop() {
@@ -408,6 +451,8 @@ export class NativeMessagingIPCServer {
     }
 
     logger.info('IPC-SERVER', 'Stopping native messaging IPC server...')
+
+    this.detachEventForwarders()
 
     if (this.server) {
       await this.server.close()

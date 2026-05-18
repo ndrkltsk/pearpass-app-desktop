@@ -17,6 +17,10 @@ declare global {
       checkUpdated: () => Promise<boolean>
       vaultInvoke: (method: string, args?: unknown[]) => Promise<{ ok: boolean; data?: unknown; error?: string }>
       vaultOnUpdate: (cb: () => void) => () => void
+      vaultOnMasterUpdate: (cb: () => void) => () => void
+      vaultOnPersonalSwarmEnvelope: (
+        cb: (payload: { envelope: string }) => void
+      ) => () => void
       openExternal: (url: string) => Promise<void>
       openLogsFolder: () => Promise<void>
       isLoggingEnabled: () => Promise<{ enabled: boolean; forced: boolean }>

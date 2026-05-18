@@ -44,6 +44,7 @@ jest.mock('pear-ipc', () => ({
     this.on = jest.fn()
     this.ready = jest.fn().mockResolvedValue()
     this.close = jest.fn().mockResolvedValue()
+    this.clients = []
     return this
   })
 }))
@@ -131,6 +132,7 @@ jest.mock('./handlers/VaultHandlers', () => ({
     this.vaultsGet = jest.fn().mockResolvedValue({ data: {} })
     this.vaultsList = jest.fn().mockResolvedValue({ data: [] })
     this.vaultsAdd = jest.fn().mockResolvedValue({ success: true })
+    this.removeVault = jest.fn().mockResolvedValue({ success: true })
     this.vaultsClose = jest.fn().mockResolvedValue({ success: true })
     this.activeVaultInit = jest.fn().mockResolvedValue({ success: true })
     this.loadVaultMetadata = jest.fn().mockResolvedValue()
@@ -146,6 +148,9 @@ jest.mock('./handlers/VaultHandlers', () => ({
     this.activeVaultDeleteInvite = jest
       .fn()
       .mockResolvedValue({ success: true })
+    this.activeVaultGetWriterKey = jest
+      .fn()
+      .mockResolvedValue('mock-writer-key-hex')
     this.pairActiveVault = jest.fn().mockResolvedValue({ success: true })
     this.initListener = jest.fn().mockResolvedValue({ success: true })
     this.closeAllInstances = jest.fn().mockResolvedValue({ success: true })
@@ -183,6 +188,7 @@ const mockPearpassClient = {
   vaultsGet: jest.fn(),
   vaultsList: jest.fn(),
   vaultsAdd: jest.fn(),
+  removeVault: jest.fn(),
   vaultsClose: jest.fn(),
   activeVaultInit: jest.fn(),
   activeVaultGetStatus: jest.fn(),
@@ -201,7 +207,9 @@ const mockPearpassClient = {
   pairActiveVault: jest.fn(),
   initListener: jest.fn(),
   closeAllInstances: jest.fn(),
-  cancelPairActiveVault: jest.fn()
+  cancelPairActiveVault: jest.fn(),
+  on: jest.fn(),
+  off: jest.fn()
 }
 
 describe('nativeMessagingIPCServer', () => {
@@ -237,6 +245,8 @@ describe('nativeMessagingIPCServer', () => {
 
     beforeEach(() => {
       platform.mockReturnValue('linux')
+      mockPearpassClient.on.mockReset()
+      mockPearpassClient.off.mockReset()
       serverInstance = new NativeMessagingIPCServer(mockPearpassClient)
     })
 
@@ -315,6 +325,7 @@ describe('nativeMessagingIPCServer', () => {
         expect(handlers.encryptionAdd).toBeUndefined()
         expect(handlers.vaultsList).toBeUndefined()
         expect(handlers.activeVaultList).toBeUndefined()
+        expect(handlers.removeVault).toBeUndefined()
       })
 
       it('should call nmGetAppIdentity handler correctly', async () => {
@@ -390,6 +401,57 @@ describe('nativeMessagingIPCServer', () => {
         })
         expect(await handlers.resetTimer()).toEqual({ ok: true })
       })
+
+      it('should subscribe to vault-access-revoked on the pearpass client', async () => {
+        await serverInstance.start()
+
+        expect(mockPearpassClient.on).toHaveBeenCalledWith(
+          'vault-access-revoked',
+          expect.any(Function)
+        )
+      })
+
+      it('should forward vault-access-revoked to every connected IPC client', async () => {
+        await serverInstance.start()
+
+        const clientA = { id: 'A', onVaultAccessRevoked: jest.fn() }
+        const clientB = { id: 'B', onVaultAccessRevoked: jest.fn() }
+        serverInstance.server.clients = [clientA, clientB]
+
+        const subscribe = mockPearpassClient.on.mock.calls.find(
+          ([event]) => event === 'vault-access-revoked'
+        )
+        expect(subscribe).toBeDefined()
+        const handler = subscribe[1]
+
+        const payload = { vaultId: 'v-1', actor: 'd-2' }
+        handler(payload)
+
+        expect(clientA.onVaultAccessRevoked).toHaveBeenCalledWith(payload)
+        expect(clientB.onVaultAccessRevoked).toHaveBeenCalledWith(payload)
+      })
+
+      it('should not crash if a client throws while pushing the event', async () => {
+        await serverInstance.start()
+
+        const failing = {
+          id: 'A',
+          onVaultAccessRevoked: jest.fn(() => {
+            throw new Error('client gone')
+          })
+        }
+        const healthy = { id: 'B', onVaultAccessRevoked: jest.fn() }
+        serverInstance.server.clients = [failing, healthy]
+
+        const handler = mockPearpassClient.on.mock.calls.find(
+          ([event]) => event === 'vault-access-revoked'
+        )[1]
+
+        expect(() => handler({ vaultId: 'v-1' })).not.toThrow()
+        expect(healthy.onVaultAccessRevoked).toHaveBeenCalledWith({
+          vaultId: 'v-1'
+        })
+      })
     })
 
     describe('stop', () => {
@@ -417,6 +479,20 @@ describe('nativeMessagingIPCServer', () => {
         expect(logger.info).not.toHaveBeenCalledWith(
           'IPC-SERVER',
           'Stopping native messaging IPC server...'
+        )
+      })
+
+      it('should detach the vault-access-revoked listener', async () => {
+        await serverInstance.start()
+        const handler = mockPearpassClient.on.mock.calls.find(
+          ([event]) => event === 'vault-access-revoked'
+        )[1]
+
+        await serverInstance.stop()
+
+        expect(mockPearpassClient.off).toHaveBeenCalledWith(
+          'vault-access-revoked',
+          handler
         )
       })
     })

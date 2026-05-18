@@ -63,6 +63,11 @@ export class VaultHandlers {
     return { success: true }
   }
 
+  async removeVault(params) {
+    await this.client.removeVault(params.vaultId)
+    return { success: true }
+  }
+
   async vaultsClose() {
     await this.client.vaultsClose()
     return { success: true }
@@ -154,6 +159,10 @@ export class VaultHandlers {
   async activeVaultDeleteInvite() {
     await this.client.activeVaultDeleteInvite()
     return { success: true }
+  }
+
+  async activeVaultGetWriterKey() {
+    return await this.client.activeVaultGetWriterKey()
   }
 
   async pairActiveVault(params) {

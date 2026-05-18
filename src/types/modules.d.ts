@@ -61,9 +61,11 @@ declare module '@tetherto/pearpass-lib-vault' {
       vaultId: string,
       vaultUpdate: { name: string; password: string; currentPassword: string }
     ) => Promise<void>
+    deleteVaultLocal: (vaultId: string) => Promise<Vault[]>
   }
 
   export const setPearpassVaultClient: any
+  export function setCurrentDeviceName(name: string | null): void
   export const VaultProvider: any
   export function useVaults(options?: {
     onCompleted?: (payload: Vault[]) => void
@@ -254,6 +256,34 @@ declare module '@tetherto/pearpass-lib-vault' {
   export const useRecords: any
   export const useBlindMirrors: any
 
+  export const ACTION_TYPES: {
+    DELETE_VAULT: 'delete-vault'
+    [key: string]: string
+  }
+
+  export function broadcastAction(action: {
+    type: string
+    payload?: unknown
+  }): Promise<{
+    results: Array<{
+      targetDeviceId: string
+      timestamp: string
+      actionId: string
+      key: string
+    }>
+    failures: Array<{ targetDeviceId: string; error: Error }>
+  }>
+
+  export function broadcastDeleteVault(vaultId: string): Promise<{
+    results: Array<{
+      targetDeviceId: string
+      timestamp: string
+      actionId: string
+      key: string
+    }>
+    failures: Array<{ targetDeviceId: string; error: Error }>
+  }>
+
   export function closeAllInstances(): Promise<void>
 
   export function useRecordCountsByType(): {
@@ -322,6 +352,8 @@ declare module '@tetherto/pearpass-lib-vault/src/utils/buffer' {
 
 declare module '@tetherto/pearpass-lib-vault/src/instances' {
   export const pearpassVaultClient: {
+    on?: (event: string, handler: (...args: any[]) => void) => void
+    off?: (event: string, handler: (...args: any[]) => void) => void
     decryptBitwardenExport: (params: {
       password: string
       salt: string

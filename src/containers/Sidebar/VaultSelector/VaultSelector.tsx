@@ -34,7 +34,7 @@ import { useTranslation } from '../../../hooks/useTranslation'
 import { sortByName } from '../../../utils/sortByName'
 import { AddDeviceModalContentV2 } from '../../Modal/AddDeviceModalContentV2/AddDeviceModalContentV2'
 import { CreateOrEditVaultModalContentV2 } from '../../Modal/CreateOrEditVaultModalContentV2/CreateOrEditVaultModalContentV2'
-import { DeleteVaultModalContent } from '../../Modal/DeleteVaultModalContent'
+import { DeleteVaultModalContentV2 } from '../../Modal/DeleteVaultModalContentV2'
 import { ModifyVaultModalContent } from '../../Modal/ModifyVaultModalContent'
 import { PairedDevicesModalContent } from '../../Modal/PairedDevicesModalContent'
 import { useVaultSwitch } from '../../../hooks/useVaultSwitch'
@@ -120,7 +120,9 @@ export const VaultSelector = ({ onClose }: VaultSelectorProps = {}) => {
   }
 
   const handleDelete = (vault: Vault) => {
-    setModal(<DeleteVaultModalContent vaultId={vault.id} />)
+    setModal(
+      <DeleteVaultModalContentV2 vaultId={vault.id} vaultName={vault.name} />
+    )
   }
 
   const handleViewDevices = () => {
@@ -287,21 +289,17 @@ const VaultRow = ({
             </>
           )}
         </div>
-        {UNSUPPORTED && (
-          <>
-            <hr style={styles.menuDivider} />
-            <div style={styles.menuGroup}>
-              <NavbarListItem
-                size="small"
-                variant="destructive"
-                icon={<TrashOutlined color={iconDestructive.color} />}
-                label={t('Delete')}
-                testID={`vault-row-delete-${vault.id}`}
-                onClick={withMenuClose(onDelete)}
-              />
-            </div>
-          </>
-        )}
+        <hr style={styles.menuDivider} />
+        <div style={styles.menuGroup}>
+          <NavbarListItem
+            size="small"
+            variant="destructive"
+            icon={<TrashOutlined color={iconDestructive.color} />}
+            label={t('Delete')}
+            testID={`vault-row-delete-${vault.id}`}
+            onClick={withMenuClose(onDelete)}
+          />
+        </div>
       </ContextMenu>
     </div>
   )

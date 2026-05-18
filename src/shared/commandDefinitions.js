@@ -23,6 +23,7 @@ const COMMAND_DEFINITIONS = [
   { id: 1008, name: 'vaultsList' },
   { id: 1009, name: 'vaultsAdd' },
   { id: 1010, name: 'vaultsClose' },
+  { id: 1044, name: 'removeVault' },
 
   // Active vault commands
   { id: 1011, name: 'activeVaultInit' },
@@ -34,6 +35,7 @@ const COMMAND_DEFINITIONS = [
   { id: 1017, name: 'activeVaultClose' },
   { id: 1018, name: 'activeVaultCreateInvite' },
   { id: 1019, name: 'activeVaultDeleteInvite' },
+  { id: 1046, name: 'activeVaultGetWriterKey' },
 
   // Password and encryption key commands
   { id: 1020, name: 'hashPassword' },
@@ -76,7 +78,10 @@ const COMMAND_DEFINITIONS = [
   { id: 1040, name: 'generateOtpCodesByIds' },
   { id: 1041, name: 'generateHotpNext' },
   { id: 1042, name: 'addOtpToRecord' },
-  { id: 1043, name: 'removeOtpFromRecord' }
+  { id: 1043, name: 'removeOtpFromRecord' },
+
+  // Server-pushed events (fire-and-forget, server -> bridge)
+  { id: 1045, name: 'onVaultAccessRevoked', send: true }
 ]
 
 /** @type {string[]} */

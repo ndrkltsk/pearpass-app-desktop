@@ -16,7 +16,8 @@ import {
   Edit,
   LockOutlined,
   MoreVert,
-  PersonAdd
+  PersonAdd,
+  TrashOutlined
 } from '@tetherto/pearpass-lib-ui-kit/icons'
 import {
   useRecords,
@@ -27,6 +28,7 @@ import {
 
 import { AddDeviceModalContentV2 } from '../../../../containers/Modal/AddDeviceModalContentV2/AddDeviceModalContentV2'
 import { CreateOrEditVaultModalContentV2 } from '../../../../containers/Modal/CreateOrEditVaultModalContentV2/CreateOrEditVaultModalContentV2'
+import { DeleteVaultModalContentV2 } from '../../../../containers/Modal/DeleteVaultModalContentV2'
 import { PairedDevicesModalContent } from '../../../../containers/Modal/PairedDevicesModalContent'
 import { useModal } from '../../../../context/ModalContext'
 import { useTranslation } from '../../../../hooks/useTranslation'
@@ -94,6 +96,15 @@ export const YourVaultsContent = () => {
       )
     },
     [closeModal, setModal]
+  )
+
+  const openDeleteModal = useCallback(
+    (v: Vault) => {
+      setModal(
+        <DeleteVaultModalContentV2 vaultId={v.id} vaultName={v.name} />
+      )
+    },
+    [setModal]
   )
 
   const ItemCount = t('{count, plural, one {# Item} other {# Items}}', {
@@ -206,6 +217,22 @@ export const YourVaultsContent = () => {
                     }
                     onClick={() => {
                       openDevicesModal()
+                    }}
+                  />
+                  <NavbarListItem
+                    testID="settings-vault-delete-button"
+                    variant="destructive"
+                    size="small"
+                    label={t('Delete')}
+                    icon={
+                      <TrashOutlined
+                        color={theme.colors.colorSurfaceDestructiveElevated}
+                        width={24}
+                        height={24}
+                      />
+                    }
+                    onClick={() => {
+                      openDeleteModal(vault)
                     }}
                   />
                 </ContextMenu>
